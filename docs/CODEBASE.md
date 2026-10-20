@@ -3,7 +3,7 @@
 ## Aufbau
 
 - `index.html`: zugängliche deutsche Oberfläche, SVG-Icons, Formular- und Dialogstruktur.
-- `src/styles.css`: leichtes responsives Drei-Spalten-Layout; Mobilansichten für Katalog und Zusammenstellung; eigene Druckregeln.
+- `src/styles.css`: helles violettes Farbthema mit zentralen semantischen Farbtokens, weißen Karten und Lavendelflächen; responsives Drei-Spalten-Layout, Mobilansichten und neutrale Druckregeln. Warnungen bleiben gelb, Fehler rot; Farben ändern weder Tarifdaten noch Browser-Speicherschlüssel.
 - `src/app.js`: Suche/Rendering, Dialoge, lokale Speicherung, benannte Pläne, native Datei-Downloads, Import und Druckansicht. Tarif- und Benutzereingaben werden als Text gerendert, nie als ungeprüftes HTML.
 - `src/domain.js`: reine Funktionen für Suchindex, PP-/Sozialtarif-Auswahl, exakte Dezimalrechnung, Planvalidierung, Warnungen und portable Formate.
 - `scripts/acquire_sources.py`: direkte HTTPS-Downloads der offiziellen Originale; Formaterkennung und SHA-256-Provenienz. Keine Zugangsdaten.
