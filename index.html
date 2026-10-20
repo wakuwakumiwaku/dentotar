@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#106b5b">
+  <meta name="description" content="Lokaler Zahnarzttarif-Browser mit schneller Suche und persönlicher Kostenzusammenstellung.">
+  <title>DENTOTAR Browser · Tarife im Blick</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./src/styles.css">
+  <script type="module" src="./src/app.js"></script>
+</head>
+<body>
+  <svg class="icon-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.8 5.8 6.4.9-4.6 4.5 1.1 6.3-5.7-3-5.7 3 1.1-6.3-4.6-4.5 6.4-.9Z"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 16v4h16v-4"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v1"/></symbol>
+    <symbol id="i-save" viewBox="0 0 24 24"><path d="M5 3h12l4 4v14H3V3ZM7 3v6h10V3M7 21v-8h10v8"/></symbol>
+    <symbol id="i-print" viewBox="0 0 24 24"><path d="M6 8V3h12v5M6 17H3V8h18v9h-3M6 13h12v8H6Z"/></symbol>
+    <symbol id="i-tooth" viewBox="0 0 24 24"><path d="M12 4C8-1 1 4 4 10c2 4 1 10 4 11 2 1 1-8 4-8s2 9 4 8c3-1 2-7 4-11 3-6-4-11-8-6Z"/><path d="M9 4c2 1 3 2 5 2"/></symbol>
+  </svg>
+
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="DENTOTAR Browser Startseite">
+      <span class="brand-mark"><svg><use href="#i-tooth"/></svg></span>
+      <span>DENTOTAR<span class="brand-light"> Browser</span><small>TARIFE IM BLICK.</small></span>
+    </a>
+    <div class="topbar-right"><span class="local-pill"><span></span> Lokal &amp; privat</span><button class="quiet-button" id="sources-button"><svg class="icon"><use href="#i-info"/></svg><span>Quellen &amp; Stand</span></button><a class="github-link" href="https://github.com/wakuwakumiwaku/dentotar" target="_blank" rel="noopener noreferrer" aria-label="Repository auf GitHub">GitHub ↗</a></div>
+  </header>
+  <div id="storage-warning" class="storage-warning" role="alert" hidden></div>
+
+  <div class="mobile-tabs" aria-label="Arbeitsbereich">
+    <button id="catalog-tab" class="active" aria-pressed="true"><svg class="icon"><use href="#i-search"/></svg> Katalog</button>
+    <button id="plan-tab" aria-pressed="false"><svg class="icon"><use href="#i-list"/></svg> Zusammenstellung <span id="mobile-count">0</span></button>
+  </div>
+
+  <div class="workspace" id="workspace">
+    <aside class="sidebar" aria-label="Katalogfilter">
+      <div class="sidebar-heading">LEISTUNGSKATALOG <span id="sidebar-count">…</span></div>
+      <nav id="chapter-nav" aria-label="Kapitel"><div class="loading-copy">Katalog wird geladen…</div></nav>
+      <div class="sidebar-bottom"><span class="swiss-cross" aria-hidden="true">+</span><div>Schweizer Zahnarzttarif<small id="catalog-version">Stand wird geprüft</small></div></div>
+    </aside>
+
+    <main class="catalog" id="catalog-panel">
+      <div class="catalog-intro"><div><p class="eyebrow">NACHSCHLAGEN. VERGLEICHEN. ZUSAMMENSTELLEN.</p><h1>Die passende Position.<br><span>Ohne Umwege.</span></h1></div><span class="catalog-badge" id="catalog-total">… Positionen</span></div>
+      <div class="search-wrap"><svg class="icon"><use href="#i-search"/></svg><label class="sr-only" for="search">Tarifposition suchen</label><input id="search" type="search" placeholder="Ziffer, Leistung oder Stichwort suchen…" autocomplete="off" spellcheck="false"><kbd>/</kbd></div>
+      <div class="catalog-controls">
+        <label class="mobile-chapter"><span class="sr-only">Kapitel wählen</span><select id="chapter-select"><option value="">Alle Kapitel</option></select></label>
+        <div class="filter-tabs"><button id="all-filter" class="active" aria-pressed="true">Alle Positionen</button><button id="favorites-filter" aria-pressed="false"><svg class="icon"><use href="#i-star"/></svg> Favoriten <span id="favorites-count">0</span></button></div>
+        <span class="results-meta" id="results-count" role="status" aria-live="polite">Katalog laden…</span>
+      </div>
+      <div class="current-filter" id="current-filter" hidden></div>
+      <div class="list-head" aria-hidden="true"><span>ZIFFER / LEISTUNG</span><span>TP / BETRAG</span><span></span></div>
+      <div id="results" class="results" aria-busy="true"><div class="loading-state"><span class="loading-dot"></span> Offizielle Tarifdaten werden geladen…</div></div>
+      <button id="load-more" class="load-more" hidden>Weitere 50 anzeigen</button>
+      <footer class="catalog-footer"><svg class="icon"><use href="#i-check"/></svg><span>Suche und Berechnung direkt in deinem Browser. Keine externen Dienste.</span><span id="search-timing"></span></footer>
+    </main>
+
+    <aside class="plan-panel" id="plan-panel" aria-labelledby="plan-heading">
+      <div class="plan-heading"><div><span class="eyebrow">DEIN ARBEITSBEREICH</span><h2 id="plan-heading">Zusammenstellung <span id="plan-count">0</span></h2></div><button class="icon-button" id="clear-plan" aria-label="Zusammenstellung leeren" title="Zusammenstellung leeren"><svg class="icon"><use href="#i-trash"/></svg></button></div>
+      <label class="sr-only" for="plan-title">Name der Zusammenstellung</label><input id="plan-title" class="plan-title" maxlength="160" placeholder="Name der Zusammenstellung" value="Neue Zusammenstellung" autocomplete="off">
+      <div class="mode-switch" aria-label="Tarifart"><button id="private-mode" class="active" aria-pressed="true">Privatpatienten</button><button id="social-mode" aria-pressed="false">UV / MV / IV</button></div>
+      <div class="pricing-settings"><label for="tax-point">Taxpunktwert <span>CHF pro TP</span><div class="rate-input"><span>CHF</span><input id="tax-point" type="text" inputmode="decimal" value="1.00" maxlength="12" autocomplete="off" aria-describedby="rate-help rate-error"></div></label><label id="level-setting" for="private-level">Taxpunkte <span>PP-Rahmen</span><select id="private-level"><option value="reference">Referenz</option><option value="min">Minimum</option><option value="max">Maximum</option></select></label></div>
+      <p class="field-error" id="rate-error" role="alert" hidden></p>
+      <p class="settings-help" id="rate-help">Rechenwert frei einstellen. Referenz = UV-Taxpunkte im PP-Rahmen, sonst Rahmenmitte. Kein verbindlicher Praxistarif.</p>
+      <div id="plan-lines" class="plan-lines"><div class="empty-plan"><span class="empty-plan-icon"><svg><use href="#i-list"/></svg><span>+</span></span><h3>Hier wird es übersichtlich.</h3><p>Füge links Positionen mit <span class="inline-plus">+</span> hinzu.<br>Mengen und Taxpunkte kannst du danach anpassen.</p></div></div>
+      <div id="plan-warnings" class="plan-warnings" hidden></div>
+      <div class="plan-summary"><div class="summary-meta"><span id="total-label">Gesamtsumme</span><span id="total-points">0.00 TP</span></div><div class="grand-total"><span>CHF</span><output id="total-amount" aria-live="polite">0.00</output></div><p>Je Position auf 0.01 CHF gerundet. Material, Labor und MwSt. nicht automatisch ergänzt.</p></div>
+      <div class="plan-actions"><button class="primary-button" id="save-plan"><svg class="icon"><use href="#i-save"/></svg> Lokal speichern</button><button class="secondary-button" id="print-plan" title="Drucken oder als PDF speichern"><svg class="icon"><use href="#i-print"/></svg> Drucken / PDF</button><button class="quiet-button" id="json-export"><svg class="icon"><use href="#i-download"/></svg> JSON</button><button class="quiet-button" id="csv-export">CSV</button><button class="quiet-button" id="import-button">Importieren</button><button class="quiet-button" id="saved-button">Gespeicherte</button></div>
+      <div class="save-status" id="save-status" role="status">Automatisch in diesem Browser gespeichert</div>
+      <p class="plan-disclaimer">Persönliche Rechenhilfe, keine geprüfte Abrechnung. Originalregeln und Nutzungsrechte beachten. Keine Patientendaten eintragen.</p>
+    </aside>
+  </div>
+
+  <dialog id="detail-dialog" class="detail-dialog" aria-labelledby="detail-title"><button class="dialog-close icon-button" data-close aria-label="Details schliessen"><svg class="icon"><use href="#i-close"/></svg></button><div id="detail-content"></div></dialog>
+  <dialog id="sources-dialog" class="sources-dialog" aria-labelledby="sources-title"><button class="dialog-close icon-button" data-close aria-label="Quellen schliessen"><svg class="icon"><use href="#i-close"/></svg></button><p class="eyebrow">TRANSPARENZ</p><h2 id="sources-title">Quellen &amp; Datenstand</h2><div id="source-content"></div></dialog>
+  <dialog id="saved-dialog" class="saved-dialog" aria-labelledby="saved-title"><button class="dialog-close icon-button" data-close aria-label="Gespeicherte schliessen"><svg class="icon"><use href="#i-close"/></svg></button><p class="eyebrow">NUR IN DIESEM BROWSER</p><h2 id="saved-title">Gespeicherte Zusammenstellungen</h2><div id="saved-content"></div></dialog>
+  <div class="toast" id="toast" role="status" hidden></div>
+  <input id="import-file" type="file" accept="application/json,.json" hidden>
+  <section id="printout" class="printout" aria-label="Druckansicht"></section>
+  <noscript>Bitte JavaScript aktivieren. Alle Berechnungen erfolgen lokal.</noscript>
+</body>
+</html>
