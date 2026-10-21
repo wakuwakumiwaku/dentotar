@@ -1,6 +1,7 @@
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { parseCatalog } from '../src/catalog.js';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 export const PAGE_FILES = Object.freeze([
@@ -20,6 +21,7 @@ export async function buildPages(root = ROOT) {
   const output = path.join(root, 'dist-pages');
   const html = await readFile(path.join(root, 'index.html'), 'utf8');
   if (!html.includes('</head>')) throw new Error('HTML-Einstieg fehlt.');
+  parseCatalog(await readFile(path.join(root, 'public/data/catalog.json'), 'utf8'));
   await rm(output, { recursive: true, force: true });
   await mkdir(output);
   for (const [source, target] of PAGE_FILES) {
