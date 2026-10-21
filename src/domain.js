@@ -3,6 +3,7 @@ export const SCHEMA_VERSION = 1;
 export const LIMITS = Object.freeze({ lines: 200, quantity: 999, savedPlans: 30, favorites: 2000 });
 const VALID_MODES = new Set(['private', 'social']);
 const VALID_LEVELS = new Set(['reference', 'min', 'max']);
+const CODE_COLLATOR = new Intl.Collator('de-CH', { numeric: true });
 
 export function fixed(value, places = 2) {
   if (typeof value !== 'string' && typeof value !== 'number') throw new Error('Ungültige Zahl.');
@@ -39,9 +40,12 @@ export function normalize(text) {
 }
 
 export function buildSearchIndex(positions) {
-  return positions.map(position => ({ position, code: normalize(position.code),
-    title: normalize(`${position.title} ${position.shortTitle || ''}`),
-    haystack: normalize(`${position.code} ${position.title} ${position.shortTitle || ''} ${position.notes || ''}`) }));
+  return positions.map(position => {
+    const code = normalize(position.code);
+    return { position, code, compactCode: code.replaceAll('.', ''),
+      title: normalize(`${position.title} ${position.shortTitle || ''}`),
+      haystack: normalize(`${position.code} ${position.title} ${position.shortTitle || ''} ${position.notes || ''}`) };
+  });
 }
 
 export function search(index, query = '', { chapter = '', favorites = null } = {}) {
@@ -50,11 +54,11 @@ export function search(index, query = '', { chapter = '', favorites = null } = {
   const compact = q.replaceAll('.', '');
   return index.filter(row => (!chapter || row.position.chapter === chapter)
     && (!favorites || favorites.has(row.position.code))
-    && tokens.every(token => row.haystack.includes(token) || row.code.replaceAll('.', '').includes(token)))
-    .map(row => ({ row, score: !q ? 0 : row.code === q || row.code.replaceAll('.', '') === compact ? 0
+    && tokens.every(token => row.haystack.includes(token) || row.compactCode.includes(token)))
+    .map(row => ({ row, score: !q ? 0 : row.code === q || row.compactCode === compact ? 0
       : row.code.startsWith(q) ? 1 : row.title.startsWith(q) ? 2
         : tokens.every(t => row.title.includes(t)) ? 3 : 4 }))
-    .sort((a, b) => a.score - b.score || a.row.position.code.localeCompare(b.row.position.code, 'de-CH', { numeric: true }))
+    .sort((a, b) => a.score - b.score || CODE_COLLATOR.compare(a.row.position.code, b.row.position.code))
     .map(item => item.row.position);
 }
 

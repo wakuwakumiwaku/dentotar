@@ -11,7 +11,7 @@ const pointsFormat = new Intl.NumberFormat('de-CH', { maximumFractionDigits: 2 }
 const chf = cents => amountFormat.format(cents / 100);
 const tp = value => value == null ? '—' : pointsFormat.format(Number(value));
 const STORAGE_KEY = 'dentotar.workspace.v1';
-let state = createState(), catalog, index, lookup, result, chapter = '', onlyFavorites = false, visible = 50;
+let state = createState(), catalog, index, lookup, chapterLookup, sectionLookup, result, chapter = '', onlyFavorites = false, visible = 50;
 let storageLocked = false, protectedRaw = null, toastTimer;
 let catalogIsFile = false, catalogRead = 0;
 
@@ -93,7 +93,7 @@ function renderCatalog() {
   $('#all-filter').setAttribute('aria-pressed', String(!onlyFavorites));
   $('#favorites-filter').classList.toggle('active', onlyFavorites);
   $('#favorites-filter').setAttribute('aria-pressed', String(onlyFavorites));
-  const category = catalog.chapters.find(c => c.id === chapter);
+  const category = chapterLookup.get(chapter);
   $('#current-filter').hidden = !chapter;
   $('#current-filter').innerHTML = chapter ? `<span>${h(chapter)} · ${h(category?.title)}</span><button id="reset-chapter" aria-label="Kapitelfilter entfernen">${icon('close')}</button>` : '';
   $('#reset-chapter')?.addEventListener('click', () => selectChapter(''));
@@ -104,7 +104,7 @@ function renderCatalog() {
     let price = '—';
     try { if (amountCHF !== null) price = `CHF ${chf(moneyCents(amountCHF, '1'))}`;
       else if (points !== null) price = `CHF ${chf(moneyCents(points, state.taxPointValue))}`; } catch { /* invalid input is visible in settings */ }
-    const section = catalog.sections.find(s => s.id === row.section);
+    const section = sectionLookup.get(row.section);
     const favorite = favorites.has(row.code);
     return `<article class="tariff-row" data-code="${h(row.code)}"><button class="favorite-button ${favorite ? 'is-favorite' : ''}" data-favorite="${h(row.code)}" aria-label="${h(row.code)} ${favorite ? 'aus Favoriten entfernen' : 'zu Favoriten hinzufügen'}" aria-pressed="${favorite}">${icon('star')}</button><button class="row-main" data-detail="${h(row.code)}"><span class="row-code">${h(row.code)}${row.kind === 'package' ? '<span class="kind-tag">Paket</span>' : row.kind === 'material' ? '<span class="kind-tag">Material</span>' : ''}</span><span class="row-title">${h(row.shortTitle || row.title)}</span><span class="row-subtitle">${h(section?.title || category?.title || row.section)}</span></button><div class="row-price"><span class="price-points ${points === null ? 'no-price' : ''}">${amountCHF !== null ? 'CHF-Fixbetrag' : points === null ? 'Keine TP' : `${tp(points)} <small>TP</small>`}</span><span class="price-chf">${price}</span>${state.mode === 'private' && row.privateMin !== null && row.privateMax !== null ? `<span class="price-range">${tp(row.privateMin)}–${tp(row.privateMax)} TP</span>` : state.mode === 'social' && row.coverage ? `<span class="price-range">${h(row.coverage)}</span>` : ''}</div><button class="add-button" data-add="${h(row.code)}" aria-label="${h(row.code)} hinzufügen" title="${!available ? 'Kein berechenbarer Wert für diese Tarifart. Details öffnen.' : 'Zur Zusammenstellung hinzufügen'}" ${!available ? 'disabled' : ''}>${icon('plus')}</button></article>`;
   }).join('') : `<div class="empty-results">${icon(onlyFavorites ? 'star' : 'search')}<h3>${onlyFavorites ? 'Noch keine passenden Favoriten.' : 'Keine passende Position gefunden.'}</h3><p>${onlyFavorites ? 'Markiere Positionen mit dem Stern oder ändere deine Suche.' : 'Versuche eine Ziffer wie 4.0000 oder einen kürzeren Suchbegriff.'}</p></div>`;
@@ -180,8 +180,8 @@ function originalPDF(id, page = null) {
 function showDetail(code) {
   const row = lookup.get(code);
   if (!row) return toast('Diese Ziffer ist im aktuellen Katalog nicht vorhanden.');
-  const chapterInfo = catalog.chapters.find(c => c.id === row.chapter);
-  const sectionInfo = catalog.sections.find(c => c.id === row.section);
+  const chapterInfo = chapterLookup.get(row.chapter);
+  const sectionInfo = sectionLookup.get(row.section);
   const related = (codes, label) => codes?.length ? `<div class="detail-section"><h3>${label}</h3><div class="related-codes">${codes.map(c => lookup.has(c) ? `<button class="code-link" data-detail="${h(c)}">${h(c)}</button>` : `<span>${h(c)}</span>`).join('')}</div></div>` : '';
   const points = defaultPoints(row, state.mode, state.privateLevel);
   const available = points !== null || fixedAmount(row, state.mode) !== null;
@@ -367,7 +367,10 @@ function activateCatalog(incoming, fromFile = false) {
   const next = validateCatalog(incoming);
   const nextIndex = buildSearchIndex(next.positions);
   const nextLookup = new Map(next.positions.map(position => [position.code, position]));
+  const nextChapters = new Map(next.chapters.map(item => [item.id, item]));
+  const nextSections = new Map(next.sections.map(item => [item.id, item]));
   catalog = next; index = nextIndex; lookup = nextLookup; catalogIsFile = fromFile;
+  chapterLookup = nextChapters; sectionLookup = nextSections;
   $('#catalog-version').textContent = `Katalogstand ${catalog.version}`;
   $('#catalog-total').textContent = `${catalog.positions.length} Positionen`;
   $('#catalog-start').hidden = true;

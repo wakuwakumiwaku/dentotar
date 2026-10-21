@@ -7,8 +7,8 @@
   <meta name="description" content="Lokaler Zahnarzttarif-Browser mit schneller Suche und persönlicher Kostenzusammenstellung.">
   <title>DENTOTAR Browser · Tarife im Blick</title>
   <link rel="icon" href="./favicon.svg?v=violet-contrast-1" type="image/svg+xml">
-  <link rel="stylesheet" href="./src/styles.css?v=violet-contrast-1">
-  <script type="module" src="./src/app.js?v=pages-2"></script>
+  <link rel="stylesheet" href="./src/styles.css?v=violet-fluid-1">
+  <script type="module" src="./src/app.js?v=pages-3"></script>
 </head>
 <body>
   <svg class="icon-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -34,6 +34,12 @@
     </a>
     <div class="topbar-right"><span class="local-pill"><span></span> Pläne lokal</span><button class="quiet-button" id="sources-button"><svg class="icon"><use href="#i-info"/></svg><span>Quellen &amp; Stand</span></button><a class="github-link" href="https://github.com/wakuwakumiwaku/dentotar" target="_blank" rel="noopener noreferrer" aria-label="Repository auf GitHub">GitHub ↗</a></div>
   </header>
+  <nav class="catalog-switch" aria-label="Katalog wechseln">
+    <span class="catalog-switch-label">Kataloge</span>
+    <a href="https://wakuwakumiwaku.github.io/dentotar/" aria-current="page">DENTOTAR</a>
+    <a href="https://wakuwakumiwaku.github.io/migel/">MiGeL</a>
+    <a href="https://wakuwakumiwaku.github.io/spezialitaetenliste/">Spezialitätenliste</a>
+  </nav>
   <div id="storage-warning" class="storage-warning" role="alert" hidden></div>
 
   <section class="catalog-start" id="catalog-start" aria-labelledby="catalog-start-title" hidden>

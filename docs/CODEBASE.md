@@ -2,18 +2,19 @@
 
 ## Aufbau
 
-- `index.html`: zugängliche deutsche Oberfläche, SVG-Icons, Formular- und Dialogstruktur.
+- `index.html`: zugängliche deutsche Oberfläche, SVG-Icons, Formular- und Dialogstruktur sowie gegenseitige Kataloglinks zu DENTOTAR, MiGeL und Spezialitätenliste mit markierter aktueller Seite. Die separate, umbrechende Navigation verändert keine Sticky-Header-Höhen.
 - `src/styles.css`: dunkles violettes Farbthema mit anthrazitfarbenem Hintergrund, abgestuften dunklen Karten und heller Schrift; zentrale semantische Farbtokens und kontrastreiche native Dropdowns; responsives Drei-Spalten-Layout, Mobilansichten und neutrale Druckregeln. Warnungen bleiben gelb und Fehler rot auf dunklen Hinweisflächen. Leseschrift: Tariftitel und Formulare 17 px, Originaltexte 16 px, Beträge 15–18 px; größere Zeilenabstände, helle Sekundärtexte und deutliche Feldumrandungen. Bei kleineren Breiten werden Spalten und Aktionen umgebrochen statt die Schrift stark zu verkleinern. Noch stärkerer Kontrast: nahezu schwarzer Hintergrund, weisse Primärtexte, sehr helle Sekundärtexte und klar abgesetzte Feld- und Kartengrenzen. Die Druckansicht bleibt unverändert hell; Darstellung ändert weder Tarifdaten noch Browser-Speicherschlüssel.
 - `src/catalog.js`: begrenzter JSON-Katalogparser mit vollständiger Prüfung der im UI verwendeten Felder vor Aktivierung; HTTPS-Quelllinks und optionale SHA-256-Angaben als exakt 64-stellige Hex-Zeichenfolge; fehlerhafte Metadaten vor jeder Aktivierung ablehnen.
 - `scripts/build-pages.mjs`: öffentlicher Build aus explizit erlaubten Code-/Assetdateien sowie `public/data/catalog.json` und den beiden Original-PDFs; niemals `public/` oder den vollständigen `dist/` pauschal kopieren. `.github/workflows/pages.yml` veröffentlicht ausschliesslich `dist-pages/`.
 - `tests/pages.test.mjs`, `tests/pages-browser.mjs`: private Canary-Dateien gegen versehentliches Publishing, Katalogvalidierung und native Pages-Prüfung unter `/dentotar/`, einschliesslich nativer Dateieingabe, Fehlversuchen, Downloads und Reload.
 - `src/app.js`: Suche/Rendering, Dialoge, lokale Speicherung, benannte Pläne, native Datei-Downloads, Import und Druckansicht. Tarif- und Benutzereingaben werden als Text gerendert, nie als ungeprüftes HTML.
-- `src/domain.js`: reine Funktionen für Suchindex, PP-/Sozialtarif-Auswahl, exakte Dezimalrechnung, Planvalidierung, Warnungen und portable Formate.
+- `src/domain.js`: reine Funktionen für Suchindex, PP-/Sozialtarif-Auswahl, exakte Dezimalrechnung, Planvalidierung, Warnungen und portable Formate. Normalisierte Titel, Suchtexte und punktlose Ziffern werden einmal je Katalog vorbereitet; ein wiederverwendeter deutscher numerischer `Intl.Collator` erhält die bisherige Trefferreihenfolge ohne wiederholte Locale-Initialisierung im Sortiervergleich. Kapitel-/Abschnittsdetails werden in der App einmal je validiertem Katalog über Maps erschlossen.
 - `scripts/acquire_sources.py`: direkte HTTPS-Downloads der offiziellen Originale; Formaterkennung und SHA-256-Provenienz. Keine Zugangsdaten.
 - `scripts/import_catalog.py`: CHM/PDF-Import und Quellabgleich; Details in DATA.md.
 - `scripts/serve.mjs`: lokaler statischer Server, feste Routen-Whitelist, Loopback-/Host-Grenze, CSP, ETags und ausgehandeltes Gzip. Keine Schreib-API. Verhindert auch Zugriff über Symlinks ausserhalb des freigegebenen Roots.
 - `scripts/build.mjs`: erzeugt einen eigenständigen statischen lokalen Build in `dist/`. Bricht bei fehlendem Katalog ab.
 - `tests/domain.test.mjs`, `tests/server.test.mjs`, `tests/test_import_catalog.py`: netzwerkfreie Regressionstests mit synthetischen Daten.
+- `tests/search.test.mjs`: vollständige geordnete Trefferparität am gebündelten echten Katalog und zusätzliche numerische Sortier-/Favoritenkontrollen; `tests/catalog-switch.test.mjs` prüft alle drei Kataloglinks und die genau eine aktuelle Seite.
 - `tests/browser.mjs`: optionale native Headless-Camoufox-Prüfung am tatsächlich importierten Katalog. Alle Kontexte und der Testserver werden geschlossen.
 - `.github/workflows/ci.yml`: Syntax- und netzwerkfreie Funktionstests unter Node 22/Python 3.12; kein Deployment.
 
@@ -49,6 +50,7 @@ Portabler Export: `kind: dentotar-plan`, Schema, Katalogversion, Tarifart, TPW, 
 4. Desktop, Tablet, 390 und 320 px prüfen; echte Listenzeilen, Details und das Ende der Zusammenstellung anschauen.
 5. Vor jedem Commit ignorierte Quelldateien, lokale Daten und vollständigen Staging-Diff kontrollieren.
 6. Nur die dokumentierten Katalog-/Originaldateien veröffentlichen; niemals persönliche Pläne oder beliebige zusätzliche Datendateien übernehmen.
+7. Suchoptimierungen gegen die bisherige vollständige Trefferreihenfolge prüfen, nicht nur Trefferzahlen. Reine Such-CPU, DOM-Rendering und Browser-/Treiberlaufzeit getrennt messen. Keine künstliche Eingabeverzögerung einführen, solange die synchrone Suche innerhalb des gemessenen Budgets liegt. Maximal 50 anfängliche Zeilen rendern; weitere Positionen bleiben über „Weitere anzeigen“ erreichbar.
 
 ## Öffentliche Pages-Version
 
