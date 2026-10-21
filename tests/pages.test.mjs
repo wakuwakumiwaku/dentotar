@@ -69,6 +69,35 @@ test('source checksums reject malformed values before activation and preserve va
   }
 });
 
+test('Pages build rejects unusable catalogs without replacing the previous build', async t => {
+  for (const [name, raw] of [
+    ['broken JSON', '{broken'],
+    ['empty positions', JSON.stringify({ ...fixture(), positions: [] })],
+    ['invalid tariff values', JSON.stringify({ ...fixture(), positions: [{ ...fixture().positions[0], privateMin: 20 }] })],
+  ]) {
+    await t.test(name, async () => {
+      const root = await mkdtemp(path.join(os.tmpdir(), 'dentotar-invalid-pages-'));
+      try {
+        for (const [source] of PAGE_FILES) {
+          await mkdir(path.dirname(path.join(root, source)), { recursive: true });
+          await writeFile(path.join(root, source), source === 'index.html' ? '<html><head></head><body>Test</body></html>' : `fixture ${source}`);
+        }
+        const catalogPath = path.join(root, 'public/data/catalog.json');
+        await writeFile(catalogPath, JSON.stringify(fixture()));
+        const output = await buildPages(root);
+        const before = await Promise.all(PAGE_FILES.map(([, target]) => readFile(path.join(output, target))));
+        await writeFile(catalogPath, raw);
+        await assert.rejects(() => buildPages(root), /JSON|Katalogformat/);
+        for (const [i, [, target]] of PAGE_FILES.entries()) {
+          assert.deepEqual(await readFile(path.join(output, target)), before[i], target);
+        }
+        assert.equal(await readFile(path.join(output, '.nojekyll'), 'utf8'), '');
+        assert.equal(await readFile(catalogPath, 'utf8'), raw);
+      } finally { await rm(root, { recursive: true, force: true }); }
+    });
+  }
+});
+
 test('Pages build includes the authorized catalog and PDFs but excludes unrelated private files', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'dentotar-pages-'));
   const dataFiles = ['data/catalog.json', 'data/source-tariff.pdf', 'data/source-shorttext.pdf'];
