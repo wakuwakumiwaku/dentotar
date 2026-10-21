@@ -8,7 +8,7 @@ import { createHash } from 'node:crypto';
 const PROJECT = fileURLToPath(new URL('../', import.meta.url));
 const ROUTES = new Map([
   ['/', 'index.html'], ['/index.html', 'index.html'], ['/favicon.svg', 'public/favicon.svg'],
-  ['/src/app.js', 'src/app.js'], ['/src/domain.js', 'src/domain.js'], ['/src/styles.css', 'src/styles.css'],
+  ['/src/app.js', 'src/app.js'], ['/src/catalog.js', 'src/catalog.js'], ['/src/domain.js', 'src/domain.js'], ['/src/styles.css', 'src/styles.css'],
   ['/data/catalog.json', 'public/data/catalog.json'], ['/data/source-tariff.pdf', 'public/data/source-tariff.pdf'],
   ['/data/source-shorttext.pdf', 'public/data/source-shorttext.pdf'],
 ]);

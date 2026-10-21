@@ -2,6 +2,16 @@
 
 Ein kompakter, lokaler Browser für Schweizer Zahnarzttarife: Positionen finden, Originalregeln nachlesen und eine persönliche Kostenzusammenstellung berechnen. Deutschsprachig, ohne Benutzerkonto, Backend-Datenbank, externe Schriftarten oder Laufzeitpakete.
 
+## Online nutzen
+
+Live: https://wakuwakumiwaku.github.io/dentotar/
+
+Die öffentliche App verteilt nur den Programmcode, keine Tarifdateien. Mit „Katalogdatei öffnen“ die lokal erzeugte `public/data/catalog.json` auswählen. Die Datei wird ausschliesslich im Browser gelesen, nicht hochgeladen. Danach stehen Suche, Originalregeln und Kostenzusammenstellung zur Verfügung. PDF-Verweise führen in der Online-Version direkt zum Herausgeber.
+
+Nach einem Seitenneuladen den Katalog erneut auswählen; Arbeitsstand und benannte Pläne bleiben im Browser gespeichert. Der Katalog selbst wird nicht dauerhaft gespeichert. Der Speicher der Online-Seite ist vom lokalen Browser getrennt: Pläne bei Bedarf lokal als JSON exportieren und online über „Importieren“ übernehmen. Keine Patientendaten eintragen.
+
+Falls die Katalogdatei noch fehlt, das Repository lokal herunterladen und wie unten beschrieben `npm run data` ausführen. Die jeweiligen Nutzungsbedingungen gelten unabhängig davon, ob die App lokal oder online verwendet wird.
+
 ## Start
 
 Voraussetzungen: Node.js ab 22 und für den Datenimport Python ab 3.10, 7-Zip (`7z`) sowie Poppler (`pdftotext`). Der Datenimport verwendet ausschliesslich die Python-Standardbibliothek.
@@ -40,7 +50,7 @@ Rechnung: `Anzahl × Taxpunkte × CHF pro Taxpunkt`. Intern mit Ganzzahlen und d
 
 Dies ist ein unabhängiges persönliches Projekt, kein offizielles Produkt der SSO oder MTK. DENTOTAR® ist eine geschützte Marke der SSO. Die SSO nennt ausdrückliche Nutzungsgrenzen, insbesondere für gewerbliche Abrechnung und Praxissoftware.[3] Vor einer solchen Nutzung sind die erforderlichen schriftlichen Genehmigungen einzuholen.
 
-Originaldateien, extrahierter Katalog, lokale Pläne und der lokale Build werden nicht mit dem Repository verteilt. Der Import lädt die offiziellen Dateien direkt beim Herausgeber herunter. Eine private Repository-Einstellung ersetzt keine Nutzungserlaubnis. Keine öffentliche Bereitstellung von `dist/` oder `public/data/` ohne Rechteklärung. Weitere Provenienz, Prüfungen und Quellabweichungen: [docs/DATA.md](docs/DATA.md).
+Originaldateien, extrahierter Katalog, lokale Pläne und der lokale Build werden nicht mit dem Repository verteilt. Der Import lädt die offiziellen Dateien direkt beim Herausgeber herunter. Eine private Repository-Einstellung ersetzt keine Nutzungserlaubnis. Keine öffentliche Bereitstellung von `dist/` oder `public/data/` ohne Rechteklärung. GitHub Pages verwendet ausschliesslich den separaten, datenfreien `dist-pages/`-Build mit expliziter Datei-Allowlist. Weitere Provenienz, Prüfungen und Quellabweichungen: [docs/DATA.md](docs/DATA.md).
 
 ## Entwicklung und Prüfung
 
@@ -48,6 +58,7 @@ Originaldateien, extrahierter Katalog, lokale Pläne und der lokale Build werden
 npm run check
 npm test
 npm run build
+npm run build:pages
 node scripts/serve.mjs --dist --port 5174
 ```
 
@@ -62,6 +73,8 @@ npm run test:browser
 ```
 
 Die Browserprüfung verwendet einen eigenen dynamischen lokalen Port und neue Browser-Kontexte. Persönliche Browserprofile bleiben unberührt. Sie prüft echte Downloads, native Dateiauswahl, Reload-Persistenz, Eingabefehler, Speicherausfälle, parallele Tabs und Layoutbreiten 320–1440 px. Ergebnisdateien und Screenshots liegen ausschliesslich in `.local/qa/`. Der Druckdialog wird im Test abgefangen; die echte Druckansicht wird mit Print-Medienregeln geprüft, nicht als native PDF-Datei ausgegeben.
+
+Die Pages-Workflow-Datei erstellt und veröffentlicht nur `dist-pages/`; sie führt keinen Datenimport aus. `npm test` prüft zusätzlich mit privaten Testmarkern, dass weder Tarifdateien noch sonstige Dateien unter `public/` in diesen Build gelangen. `npm run test:pages` prüft optional mit dem oben beschriebenen Browser-Setup die reale native Dateieingabe, Importfehler, Berechnung, PDF-Quelllinks, Reload, Downloads und 320–1440-px-Layouts unter dem Pages-Unterpfad. Die Prüfung benötigt den lokalen Katalog; sie lädt ihn nicht auf einen Server hoch.
 
 Architektur und Pflege: [docs/CODEBASE.md](docs/CODEBASE.md).
 

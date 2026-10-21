@@ -1,5 +1,6 @@
 import { buildSearchIndex, search, defaultPoints, fixedAmount, createState, validateState, calculatePlan,
   exportPlan, importPlan, planCSV, moneyCents, LIMITS } from './domain.js';
+import { parseCatalog, validateCatalog, safeSourceURL, MAX_CATALOG_BYTES } from './catalog.js';
 
 const $ = selector => document.querySelector(selector);
 const h = value => String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -12,6 +13,7 @@ const tp = value => value == null ? '—' : pointsFormat.format(Number(value));
 const STORAGE_KEY = 'dentotar.workspace.v1';
 let state = createState(), catalog, index, lookup, result, chapter = '', onlyFavorites = false, visible = 50;
 let storageLocked = false, protectedRaw = null, toastTimer;
+let catalogIsFile = false, catalogRead = 0;
 
 function toast(message) {
   clearTimeout(toastTimer);
@@ -168,6 +170,13 @@ function syncFields() { $('#tax-point').value = state.taxPointValue; $('#plan-ti
 function setMode(mode) { state.mode = mode; renderCalculator(); renderCatalog(); persist(); }
 function openDialog(id) { const dialog = $(id); if (!dialog.open) dialog.showModal(); }
 
+function originalPDF(id, page = null) {
+  const file = id === 'tariff-pdf' ? 'source-tariff.pdf' : 'source-shorttext.pdf';
+  const fallback = id === 'tariff-pdf' ? 'https://www.mtk-ctm.ch/tarife/zahnarzt' : 'https://www.sso.ch/de/Abrechnung-Dentotar';
+  const url = catalogIsFile ? safeSourceURL(catalog.sources.find(source => source.id === id)?.url) : `./data/${file}`;
+  return `${url === '#' ? fallback : url.split('#')[0]}${page ? `#page=${page}` : ''}`;
+}
+
 function showDetail(code) {
   const row = lookup.get(code);
   if (!row) return toast('Diese Ziffer ist im aktuellen Katalog nicht vorhanden.');
@@ -181,17 +190,21 @@ function showDetail(code) {
   const privateDisplay = fixedAmount(row, 'private') !== null
     ? `CHF ${chf(moneyCents(fixedAmount(row, 'private'), '1'))} fix`
     : row.privateMin == null || row.privateMax == null ? 'Kein Rahmen' : `${tp(row.privateMin)}–${tp(row.privateMax)} TP`;
-  $('#detail-content').innerHTML = `<p class="detail-code">${h(row.code)}${row.kind === 'package' ? ' · Leistungspaket' : ''}</p><h2 id="detail-title" class="detail-title">${h(row.title)}</h2><p class="detail-subtitle">${h(row.section)} · ${h(sectionInfo?.title || chapterInfo?.title)}</p>${row.shortTitle && row.shortTitle !== row.title ? `<p class="short-title"><span>SSO-Kurztext V.25.1</span> ${h(row.shortTitle)}</p>` : ''}<div class="detail-grid"><div class="detail-stat"><span>UV / MV / IV</span><strong>${socialDisplay}</strong><small>Deckung: ${h(row.coverage || 'keine Angabe')}</small></div><div class="detail-stat"><span>Privatpatienten</span><strong>${privateDisplay}</strong></div></div><div class="detail-section"><h3>Originaltext · Tarif 222</h3><div class="original-notes">${h(row.notes || 'Keine zusätzlichen Hinweise auf der Positionsseite.')}</div></div>${sectionInfo?.notes ? `<details class="detail-section"><summary>Übergeordnete Kapitelregeln · ${h(row.section)}</summary><div class="original-notes">${h(sectionInfo.notes)}</div></details>` : ''}${chapterInfo?.notes ? `<details class="detail-section"><summary>Übergeordnete Kapitelregeln · ${h(row.chapter)}</summary><div class="original-notes">${h(chapterInfo.notes)}</div></details>` : ''}${related(row.excludes, 'Explizite Nichtkumulationen (automatisch extrahiert)')}${related(row.members, 'Im Leistungspaket enthalten')}${related(row.packages, 'Mitglied von Leistungspaketen')}<div class="detail-section"><p>Gültigkeit laut Quelle: ${h(row.validity || 'keine Angabe')}<br>MwSt.-Angabe: ${h(row.vat || 'keine Angabe')}</p></div><div class="detail-links"><a href="./data/source-tariff.pdf${row.sourcePage ? `#page=${row.sourcePage}` : ''}" target="_blank" rel="noopener">Original-PDF${row.sourcePage ? ` · Seite ${row.sourcePage}` : ''} ↗</a><a href="https://www.mtk-ctm.ch/tarife/zahnarzt" target="_blank" rel="noopener noreferrer">Offizielle Quelle ↗</a></div><p class="detail-caution">Abgeleitete Prüfhinweise sind nicht vollständig. Originaltext und übergeordnete Regeln sind massgeblich. Keine automatische Prüfung der medizinischen oder versicherungsrechtlichen Abrechenbarkeit.</p><div class="detail-actions"><button class="primary-button" data-add="${h(row.code)}" ${!available ? 'disabled' : ''}>${icon('plus')} Hinzufügen</button><button class="secondary-button" data-favorite="${h(row.code)}">${icon('star')} ${state.favorites.includes(row.code) ? 'Favorit entfernen' : 'Als Favorit merken'}</button></div>`;
+  $('#detail-content').innerHTML = `<p class="detail-code">${h(row.code)}${row.kind === 'package' ? ' · Leistungspaket' : ''}</p><h2 id="detail-title" class="detail-title">${h(row.title)}</h2><p class="detail-subtitle">${h(row.section)} · ${h(sectionInfo?.title || chapterInfo?.title)}</p>${row.shortTitle && row.shortTitle !== row.title ? `<p class="short-title"><span>SSO-Kurztext V.25.1</span> ${h(row.shortTitle)}</p>` : ''}<div class="detail-grid"><div class="detail-stat"><span>UV / MV / IV</span><strong>${socialDisplay}</strong><small>Deckung: ${h(row.coverage || 'keine Angabe')}</small></div><div class="detail-stat"><span>Privatpatienten</span><strong>${privateDisplay}</strong></div></div><div class="detail-section"><h3>Originaltext · Tarif 222</h3><div class="original-notes">${h(row.notes || 'Keine zusätzlichen Hinweise auf der Positionsseite.')}</div></div>${sectionInfo?.notes ? `<details class="detail-section"><summary>Übergeordnete Kapitelregeln · ${h(row.section)}</summary><div class="original-notes">${h(sectionInfo.notes)}</div></details>` : ''}${chapterInfo?.notes ? `<details class="detail-section"><summary>Übergeordnete Kapitelregeln · ${h(row.chapter)}</summary><div class="original-notes">${h(chapterInfo.notes)}</div></details>` : ''}${related(row.excludes, 'Explizite Nichtkumulationen (automatisch extrahiert)')}${related(row.members, 'Im Leistungspaket enthalten')}${related(row.packages, 'Mitglied von Leistungspaketen')}<div class="detail-section"><p>Gültigkeit laut Quelle: ${h(row.validity || 'keine Angabe')}<br>MwSt.-Angabe: ${h(row.vat || 'keine Angabe')}</p></div><div class="detail-links"><a href="${h(originalPDF('tariff-pdf', row.sourcePage))}" target="_blank" rel="noopener">Original-PDF${row.sourcePage ? ` · Seite ${row.sourcePage}` : ''} ↗</a><a href="https://www.mtk-ctm.ch/tarife/zahnarzt" target="_blank" rel="noopener noreferrer">Offizielle Quelle ↗</a></div><p class="detail-caution">Abgeleitete Prüfhinweise sind nicht vollständig. Originaltext und übergeordnete Regeln sind massgeblich. Keine automatische Prüfung der medizinischen oder versicherungsrechtlichen Abrechenbarkeit.</p><div class="detail-actions"><button class="primary-button" data-add="${h(row.code)}" ${!available ? 'disabled' : ''}>${icon('plus')} Hinzufügen</button><button class="secondary-button" data-favorite="${h(row.code)}">${icon('star')} ${state.favorites.includes(row.code) ? 'Favorit entfernen' : 'Als Favorit merken'}</button></div>`;
   openDialog('#detail-dialog');
 }
 
 function renderSources() {
-  const safeURL = value => { try { const u = new URL(value); return u.protocol === 'https:' ? u.href : '#'; } catch { return '#'; } };
+  const safeURL = safeSourceURL;
+  if (!catalog) {
+    $('#source-content').innerHTML = '<p>Die öffentliche App enthält keine Tarifdateien. Öffne deine lokal erzeugte <code>catalog.json</code>; sie wird nur in diesem Browser gelesen und nicht hochgeladen.</p><p><a href="https://www.mtk-ctm.ch/tarife/zahnarzt" target="_blank" rel="noopener noreferrer">MTK/ZMT · offizielle Tarifquelle ↗</a></p><p><a href="https://www.sso.ch/de/Abrechnung-Dentotar" target="_blank" rel="noopener noreferrer">SSO · DENTOTAR und Nutzungsbedingungen ↗</a></p>';
+    return;
+  }
   $('#source-content').innerHTML = `<p>Geladener Katalog: <strong>${h(catalog.version)}</strong> · ${catalog.positions.length} kanonische Positionen. Versionsstand der Quelle, keine Zusicherung aktueller Abrechenbarkeit.</p>`
     + catalog.sources.map(source => `<article class="source-card"><h3>${h(source.title)}</h3><p>${h(source.version || '')}</p><a href="${h(safeURL(source.url))}" target="_blank" rel="noopener noreferrer">Offizielle Quelle ↗</a>${source.sha256 ? `<details><summary>SHA-256 des Originals</summary><code>${h(source.sha256)}</code></details>` : ''}</article>`).join('')
     + `<div class="source-rights"><h3>Nutzung &amp; Grenzen</h3><p>Unabhängige persönliche Nachschlage- und Rechenhilfe, kein offizielles Produkt der SSO oder MTK. DENTOTAR® ist eine geschützte Marke der SSO. Tariftexte und Originaldateien unterliegen den Nutzungsbedingungen der Rechteinhaber; sie werden nicht mit dem Repository verteilt. Für gewerbliche Nutzung oder Praxissoftware ist die erforderliche schriftliche Erlaubnis einzuholen.</p><p>Die vollständigen Originaltexte bleiben massgeblich. PP-Spannen und Sozialversicherungstarif werden getrennt geführt. Kein automatischer Aufschlag für Material, Labor oder MwSt. Keine Prüfung von Leistungsanspruch, Kombinationen über Sitzungen hinweg oder sämtlichen Häufigkeitsregeln.</p><p>Pläne und Favoriten bleiben im lokalen Browser-Speicher. JSON-Exporte regelmässig separat sichern. Keine Patientendaten eintragen.</p></div>`
     + (catalog.notices || []).map(note => `<p class="source-notice">${h(note)}</p>`).join('')
-    + '<p><a href="./data/source-shorttext.pdf" target="_blank" rel="noopener">SSO-Kurztext im Original ↗</a></p>';
+    + `<p><a href="${h(originalPDF('shorttext-pdf'))}" target="_blank" rel="noopener noreferrer">SSO-Kurztext im Original ↗</a></p>`;
 }
 
 function renderSaved() {
@@ -213,6 +226,24 @@ function toggleFavorite(code) {
 }
 
 function bindEvents() {
+  $('#catalog-open').addEventListener('click', () => $('#catalog-file').click());
+  $('#catalog-file').addEventListener('change', async event => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const generation = ++catalogRead;
+    $('#catalog-open').disabled = true;
+    $('#catalog-error').hidden = true;
+    try {
+      if (file.size > MAX_CATALOG_BYTES) throw new Error('Katalogdatei zu gross (maximal 20 MB).');
+      const incoming = parseCatalog(await file.text());
+      if (generation !== catalogRead) return;
+      activateCatalog(incoming, true);
+    } catch (error) {
+      if (generation === catalogRead) showCatalogStart(error.message);
+    } finally {
+      if (generation === catalogRead) { $('#catalog-open').disabled = false; event.target.value = ''; }
+    }
+  });
   $('#search').addEventListener('input', () => { visible = 50; renderCatalog(); });
   $('#chapter-nav').addEventListener('click', event => { const button = event.target.closest('[data-chapter]'); if (button) selectChapter(button.dataset.chapter); });
   $('#chapter-select').addEventListener('change', event => selectChapter(event.target.value));
@@ -310,7 +341,7 @@ function bindEvents() {
     window.scrollTo({ top: 0, behavior: 'instant' });
   });
   document.addEventListener('keydown', event => {
-    if (event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey && !document.querySelector('dialog[open]')
+    if (catalog && event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey && !document.querySelector('dialog[open]')
       && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName) && !document.activeElement.isContentEditable) {
       event.preventDefault(); $('#catalog-tab').click(); $('#search').focus();
     }
@@ -323,27 +354,39 @@ function bindEvents() {
   });
 }
 
-async function boot() {
-  hydrate();
-  document.body.dataset.view = 'catalog';
-  const response = await fetch('./data/catalog.json', { cache: 'no-cache' });
-  if (!response.ok) throw new Error('Lokaler Katalog fehlt. Im Projektordner „npm run data“ ausführen und danach neu laden.');
-  catalog = await response.json();
-  if (catalog.schemaVersion !== 1 || !Array.isArray(catalog.positions) || !catalog.positions.length
-    || new Set(catalog.positions.map(p => p.code)).size !== catalog.positions.length) throw new Error('Katalogformat ungültig. Tarifdaten neu importieren.');
-  lookup = new Map(catalog.positions.map(p => [p.code, p]));
-  index = buildSearchIndex(catalog.positions);
+function showCatalogStart(message = '') {
+  $('#catalog-start').hidden = false;
+  $('#workspace').hidden = true;
+  $('.mobile-tabs').hidden = true;
+  $('#catalog-error').textContent = message;
+  $('#catalog-error').hidden = !message;
+  document.body.dataset.ready = 'waiting';
+}
+
+function activateCatalog(incoming, fromFile = false) {
+  const next = validateCatalog(incoming);
+  const nextIndex = buildSearchIndex(next.positions);
+  const nextLookup = new Map(next.positions.map(position => [position.code, position]));
+  catalog = next; index = nextIndex; lookup = nextLookup; catalogIsFile = fromFile;
   $('#catalog-version').textContent = `Katalogstand ${catalog.version}`;
   $('#catalog-total').textContent = `${catalog.positions.length} Positionen`;
-  syncFields(); renderNavigation(); renderCalculator(); renderCatalog(); bindEvents();
+  $('#catalog-start').hidden = true;
+  $('#workspace').hidden = false;
+  $('.mobile-tabs').hidden = false;
+  syncFields(); renderNavigation(); renderCalculator(); renderCatalog();
   if (storageLocked) $('#save-status').textContent = 'Automatisches Speichern pausiert';
 }
 
-boot().catch(error => {
-  $('#results').innerHTML = `<div class="empty-results">${icon('info')}<h2>Katalog noch nicht bereit</h2><p>${h(error.message)}</p><p>Setup und Quellenhinweise stehen in der README des Repositories.</p></div>`;
-  $('#results').setAttribute('aria-busy', 'false');
-  $('#results-count').textContent = 'Katalog nicht geladen';
-  document.body.dataset.ready = 'error';
-  for (const button of document.querySelectorAll('.plan-actions button')) button.disabled = true;
-  console.error(error);
-});
+async function boot() {
+  hydrate(); bindEvents();
+  document.body.dataset.view = 'catalog';
+  if (document.querySelector('meta[name="dentotar-catalog"]')?.content === 'local-file') {
+    showCatalogStart();
+    return;
+  }
+  const response = await fetch('./data/catalog.json', { cache: 'no-cache' });
+  if (!response.ok) throw new Error('Lokaler Katalog fehlt. „npm run data“ im Projekt ausführen oder eine vorhandene catalog.json öffnen.');
+  activateCatalog(await response.json());
+}
+
+boot().catch(error => showCatalogStart(error.message));

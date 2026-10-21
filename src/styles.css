@@ -1,32 +1,32 @@
 /* DENTOTAR — a high-contrast dark violet tariff workspace. */
 :root {
   color-scheme: dark;
-  --canvas: #0d0b12;
-  --panel: #1b1523;
-  --ink: #fcf9ff;
-  --ink-secondary: #f0e7fa;
-  --muted: #d9cde6;
-  --subtle: #c6b7d4;
+  --canvas: #050408;
+  --panel: #100d16;
+  --ink: #ffffff;
+  --ink-secondary: #faf6ff;
+  --muted: #f0e8f8;
+  --subtle: #ddceee;
   --faint: #2c2437;
-  --border: #655176;
-  --control-border: #947daa;
-  --accent: #dcbdff;
-  --accent-dark: #eddaff;
-  --accent-fill: #6632ad;
-  --accent-fill-hover: #552192;
+  --border: #887098;
+  --control-border: #c1a4d5;
+  --accent: #e7ccff;
+  --accent-dark: #f6eaff;
+  --accent-fill: #56218f;
+  --accent-fill-hover: #451773;
   --accent-soft: #32223f;
-  --accent-border: #a47cc7;
-  --selected: #49315d;
-  --surface-soft: #241b2e;
-  --focus: #dfbfff;
+  --accent-border: #c6a0e8;
+  --selected: #513967;
+  --surface-soft: #1a1423;
+  --focus: #ebd1ff;
   --icon-muted: #d7bce9;
   --scrollbar: #a48bb9;
   --disabled: #a596b4;
   --disabled-surface: #261e2e;
   --toast: #4e306f;
-  --warning: #f2cc87;
+  --warning: #ffe2aa;
   --warning-soft: #382b1b;
-  --warning-border: #785d33;
+  --warning-border: #b68a45;
   --danger: #ffadbd;
   --danger-soft: #3b202c;
   --favorite: #e9c968;
@@ -646,6 +646,22 @@ select option, select optgroup { background-color: var(--panel); color: var(--in
   .plan-actions > .quiet-button { flex: 1 1 calc(50% - 7px); }
   .mobile-tabs button { min-height: 44px; font-size: 14px; }
   .list-head { padding-left: 60px; }
+}
+
+/* The public code-only entry opens a catalog without sending it to a server. */
+.catalog-start { width: min(740px, calc(100% - 32px)); margin: 64px auto; padding: 36px; border: 1px solid var(--control-border); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow); }
+.catalog-start h1 { margin-bottom: 20px; font-size: 36px; line-height: 1.25; letter-spacing: -.7px; }
+.catalog-start h1 span { color: var(--accent); }
+.catalog-start p { color: var(--ink-secondary); line-height: 1.75; }
+.catalog-start code { color: var(--accent); font-size: 16px; overflow-wrap: anywhere; }
+.catalog-start .primary-button { min-height: 48px; padding: 12px 18px; font-size: 17px; }
+.catalog-start .catalog-privacy { margin: 22px 0; color: var(--muted); font-size: 15px; }
+.catalog-start summary { min-height: 44px; padding: 8px 0; color: var(--accent); font-weight: 600; cursor: pointer; }
+.catalog-start .field-error { color: var(--danger); }
+@media (max-width: 580px) {
+  .catalog-start { margin: 24px auto; padding: 24px 20px; }
+  .catalog-start h1 { font-size: 29px; }
+  .catalog-start .primary-button { width: 100%; }
 }
 
 /* Printing is deliberately separate from the interactive workspace. */

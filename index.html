@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0d0b12">
+  <meta name="theme-color" content="#050408">
   <meta name="description" content="Lokaler Zahnarzttarif-Browser mit schneller Suche und persönlicher Kostenzusammenstellung.">
   <title>DENTOTAR Browser · Tarife im Blick</title>
-  <link rel="icon" href="./favicon.svg?v=violet-readable-1" type="image/svg+xml">
-  <link rel="stylesheet" href="./src/styles.css?v=violet-readable-1">
-  <script type="module" src="./src/app.js"></script>
+  <link rel="icon" href="./favicon.svg?v=violet-contrast-1" type="image/svg+xml">
+  <link rel="stylesheet" href="./src/styles.css?v=violet-contrast-1">
+  <script type="module" src="./src/app.js?v=pages-1"></script>
 </head>
 <body>
   <svg class="icon-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -35,6 +35,17 @@
     <div class="topbar-right"><span class="local-pill"><span></span> Lokal &amp; privat</span><button class="quiet-button" id="sources-button"><svg class="icon"><use href="#i-info"/></svg><span>Quellen &amp; Stand</span></button><a class="github-link" href="https://github.com/wakuwakumiwaku/dentotar" target="_blank" rel="noopener noreferrer" aria-label="Repository auf GitHub">GitHub ↗</a></div>
   </header>
   <div id="storage-warning" class="storage-warning" role="alert" hidden></div>
+
+  <section class="catalog-start" id="catalog-start" aria-labelledby="catalog-start-title" hidden>
+    <p class="eyebrow">DEIN KATALOG. DEIN BROWSER.</p>
+    <h1 id="catalog-start-title">Tarife öffnen.<br><span>Privat zusammenstellen.</span></h1>
+    <p>Suche, vergleiche und berechne direkt in deinem Browser. Öffne dafür deine <code>catalog.json</code> aus dem lokalen DENTOTAR-Projekt.</p>
+    <button id="catalog-open" class="primary-button"><svg class="icon" aria-hidden="true"><use href="#i-list"/></svg> Katalogdatei öffnen</button>
+    <input id="catalog-file" type="file" accept="application/json,.json" hidden>
+    <p id="catalog-error" class="field-error" role="alert" hidden></p>
+    <p class="catalog-privacy">Kein Upload. Keine Anmeldung. Die Katalogdatei bleibt auf deinem Gerät. Nach dem Neuladen bitte erneut auswählen; Zusammenstellungen bleiben im Browser gespeichert.</p>
+    <details><summary>Woher bekomme ich die Katalogdatei?</summary><p>Im lokal eingerichteten Projekt liegt sie unter <code>public/data/catalog.json</code>. Falls sie noch fehlt: Repository herunterladen und den dokumentierten Datenimport ausführen.</p><p><a href="https://github.com/wakuwakumiwaku/dentotar#online-nutzen" target="_blank" rel="noopener noreferrer">Anleitung auf GitHub ↗</a></p><p>Tariftexte und Originaldateien haben eigene Nutzungsbedingungen. Die öffentliche Seite verteilt deshalb nur die Anwendung, nicht den Tarifkatalog. Keine Patientendaten eintragen.</p></details>
+  </section>
 
   <div class="mobile-tabs" aria-label="Arbeitsbereich">
     <button id="catalog-tab" class="active" aria-pressed="true"><svg class="icon"><use href="#i-search"/></svg> Katalog</button>
