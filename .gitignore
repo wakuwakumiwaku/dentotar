@@ -8,9 +8,10 @@ test-results/
 .env.*
 !.env.example
 sources/
-public/data/catalog.json
-public/data/source-*.pdf
-public/data/source-*.chm
+public/data/*
+!public/data/catalog.json
+!public/data/source-tariff.pdf
+!public/data/source-shorttext.pdf
 .local/
 *.log
 *.bak

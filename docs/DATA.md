@@ -2,9 +2,9 @@
 
 ## Rechte und Zweck
 
-Dieses Projekt ist eine persönliche, nichtkommerzielle Referenz, **keine Praxis-, Abrechnungs- oder Softwarelizenz**. DENTOTAR® ist eine geschützte Marke; Tariftexte, Kurztexte und Originaldokumente unterliegen den Rechten und Nutzungsbedingungen von SSO und ZMT. Öffentliche Abrufbarkeit erteilt keine Weiterverwendungs- oder Veröffentlichungserlaubnis. Die persönliche Zweckbestimmung ist keine Zusicherung einer Nutzungsberechtigung. Vor einer weitergehenden Nutzung ist die erforderliche Zustimmung einzuholen.
+Dieses Projekt ist eine unabhängige Nachschlage- und Rechenhilfe, keine geprüfte Praxis- oder Abrechnungssoftware und kein offizielles Angebot von SSO oder ZMT. DENTOTAR® ist eine Marke der SSO. Herausgeber, Originalversionen und Abweichungen bleiben sichtbar dokumentiert.
 
-`sources/`, `public/data/catalog.json` und die kopierten Original-PDFs bleiben lokal und sind ignoriert. Weder Originale noch daraus abgeleitete Tarifdaten in Git aufnehmen oder öffentlich bereitstellen.
+`public/data/catalog.json`, `public/data/source-tariff.pdf` und `public/data/source-shorttext.pdf` sind die ausdrücklich veröffentlichten Dateien. Katalog und Original-PDFs werden auf GitHub Pages direkt bereitgestellt und automatisch geladen. Die PDFs bleiben unveränderte Kopien; ihre SHA-256-Prüfsummen stehen in `catalog.sources`. Der lokale Rohdownload-Ordner `sources/`, zusätzliche Datendateien und persönliche Pläne werden nicht veröffentlicht.
 
 ## Quellen und Vorrang
 

@@ -10,9 +10,12 @@ export const PAGE_FILES = Object.freeze([
   ['src/domain.js', 'src/domain.js'],
   ['src/styles.css', 'src/styles.css'],
   ['public/favicon.svg', 'favicon.svg'],
+  ['public/data/catalog.json', 'data/catalog.json'],
+  ['public/data/source-tariff.pdf', 'data/source-tariff.pdf'],
+  ['public/data/source-shorttext.pdf', 'data/source-shorttext.pdf'],
 ]);
 
-// Intentionally independent of the local full-data build. Never copy public/ wholesale.
+// Publish only the explicitly selected runtime files, never public/ wholesale or personal exports.
 export async function buildPages(root = ROOT) {
   const output = path.join(root, 'dist-pages');
   const html = await readFile(path.join(root, 'index.html'), 'utf8');
@@ -23,7 +26,7 @@ export async function buildPages(root = ROOT) {
     const destination = path.join(output, target);
     await mkdir(path.dirname(destination), { recursive: true });
     if (source === 'index.html') {
-      await writeFile(destination, html.replace('</head>', `  <meta name="dentotar-catalog" content="local-file">\n  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'">\n</head>`));
+      await writeFile(destination, html.replace('</head>', `  <meta name="dentotar-catalog" content="hosted">\n  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">\n</head>`));
     } else await cp(path.join(root, source), destination);
   }
   await writeFile(path.join(output, '.nojekyll'), '');
@@ -31,5 +34,5 @@ export async function buildPages(root = ROOT) {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  console.log(`Öffentlicher Code-only-Build: ${await buildPages()} (ohne Tarifdateien oder persönliche Pläne).`);
+  console.log(`Öffentlicher Tarifbrowser-Build: ${await buildPages()} (mit Katalog und Original-PDFs, ohne persönliche Pläne).`);
 }

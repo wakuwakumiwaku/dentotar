@@ -69,14 +69,18 @@ test('source checksums reject malformed values before activation and preserve va
   }
 });
 
-test('Pages build ships an exact code allowlist even when local and prior output contain private canaries', async () => {
+test('Pages build includes the authorized catalog and PDFs but excludes unrelated private files', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'dentotar-pages-'));
+  const dataFiles = ['data/catalog.json', 'data/source-tariff.pdf', 'data/source-shorttext.pdf'];
   try {
     for (const [source] of PAGE_FILES) {
       await mkdir(path.dirname(path.join(root, source)), { recursive: true });
       await writeFile(path.join(root, source), source === 'index.html' ? '<html><head></head><body>Test</body></html>' : `fixture ${source}`);
     }
-    for (const file of ['public/data/catalog.json', 'public/data/source-tariff.pdf', 'public/private-plan.json', 'dist-pages/old-private.json']) {
+    await mkdir(path.join(root, 'public/data'), { recursive: true });
+    await writeFile(path.join(root, 'public/data/catalog.json'), JSON.stringify(fixture()));
+    for (const file of dataFiles.slice(1)) await writeFile(path.join(root, 'public', file), '%PDF-1.4 fictional unit-test document');
+    for (const file of ['public/data/private-plan.json', 'public/data/local-extra.pdf', 'public/private-plan.json', 'dist-pages/old-private.json']) {
       await mkdir(path.dirname(path.join(root, file)), { recursive: true }); await writeFile(path.join(root, file), 'PRIVATE_CANARY_DO_NOT_PUBLISH');
     }
     const output = await buildPages(root);
@@ -88,11 +92,12 @@ test('Pages build ships an exact code allowlist even when local and prior output
       }
     }
     await walk(output);
-    assert.deepEqual(files.sort(), [...PAGE_FILES.map(([, target]) => target), '.nojekyll'].sort());
-    assert.match(await readFile(path.join(output, 'index.html'), 'utf8'), /name="dentotar-catalog" content="local-file"/);
-    assert.match(await readFile(path.join(output, 'index.html'), 'utf8'), /connect-src 'none'/);
+    assert.deepEqual(files.sort(), [...new Set([...PAGE_FILES.map(([, target]) => target), ...dataFiles, '.nojekyll'])].sort());
+    assert.match(await readFile(path.join(output, 'index.html'), 'utf8'), /name="dentotar-catalog" content="hosted"/);
+    assert.match(await readFile(path.join(output, 'index.html'), 'utf8'), /connect-src 'self'/);
+    assert.ok(!(await readFile(path.join(output, 'index.html'), 'utf8')).includes('content="local-file"'));
     for (const file of files) assert.ok(!(await readFile(path.join(output, file), 'utf8')).includes('PRIVATE_CANARY'));
-    assert.equal(await readFile(path.join(root, 'public/data/catalog.json'), 'utf8'), 'PRIVATE_CANARY_DO_NOT_PUBLISH');
+    for (const file of dataFiles) assert.deepEqual(await readFile(path.join(output, file)), await readFile(path.join(root, 'public', file)));
     await buildPages(root);
     assert.equal(await readFile(path.join(root, 'public/private-plan.json'), 'utf8'), 'PRIVATE_CANARY_DO_NOT_PUBLISH');
   } finally { await rm(root, { recursive: true, force: true }); }

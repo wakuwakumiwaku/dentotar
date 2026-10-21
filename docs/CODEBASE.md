@@ -5,7 +5,7 @@
 - `index.html`: zugängliche deutsche Oberfläche, SVG-Icons, Formular- und Dialogstruktur.
 - `src/styles.css`: dunkles violettes Farbthema mit anthrazitfarbenem Hintergrund, abgestuften dunklen Karten und heller Schrift; zentrale semantische Farbtokens und kontrastreiche native Dropdowns; responsives Drei-Spalten-Layout, Mobilansichten und neutrale Druckregeln. Warnungen bleiben gelb und Fehler rot auf dunklen Hinweisflächen. Leseschrift: Tariftitel und Formulare 17 px, Originaltexte 16 px, Beträge 15–18 px; größere Zeilenabstände, helle Sekundärtexte und deutliche Feldumrandungen. Bei kleineren Breiten werden Spalten und Aktionen umgebrochen statt die Schrift stark zu verkleinern. Noch stärkerer Kontrast: nahezu schwarzer Hintergrund, weisse Primärtexte, sehr helle Sekundärtexte und klar abgesetzte Feld- und Kartengrenzen. Die Druckansicht bleibt unverändert hell; Darstellung ändert weder Tarifdaten noch Browser-Speicherschlüssel.
 - `src/catalog.js`: begrenzter JSON-Katalogparser mit vollständiger Prüfung der im UI verwendeten Felder vor Aktivierung; HTTPS-Quelllinks und optionale SHA-256-Angaben als exakt 64-stellige Hex-Zeichenfolge; fehlerhafte Metadaten vor jeder Aktivierung ablehnen.
-- `scripts/build-pages.mjs`: öffentlicher Build nur aus explizit erlaubten Code-/Assetdateien; niemals `public/`, lokale Daten oder den vollständigen `dist/` kopieren. `.github/workflows/pages.yml` veröffentlicht ausschliesslich `dist-pages/`.
+- `scripts/build-pages.mjs`: öffentlicher Build aus explizit erlaubten Code-/Assetdateien sowie `public/data/catalog.json` und den beiden Original-PDFs; niemals `public/` oder den vollständigen `dist/` pauschal kopieren. `.github/workflows/pages.yml` veröffentlicht ausschliesslich `dist-pages/`.
 - `tests/pages.test.mjs`, `tests/pages-browser.mjs`: private Canary-Dateien gegen versehentliches Publishing, Katalogvalidierung und native Pages-Prüfung unter `/dentotar/`, einschliesslich nativer Dateieingabe, Fehlversuchen, Downloads und Reload.
 - `src/app.js`: Suche/Rendering, Dialoge, lokale Speicherung, benannte Pläne, native Datei-Downloads, Import und Druckansicht. Tarif- und Benutzereingaben werden als Text gerendert, nie als ungeprüftes HTML.
 - `src/domain.js`: reine Funktionen für Suchindex, PP-/Sozialtarif-Auswahl, exakte Dezimalrechnung, Planvalidierung, Warnungen und portable Formate.
@@ -17,7 +17,7 @@
 - `tests/browser.mjs`: optionale native Headless-Camoufox-Prüfung am tatsächlich importierten Katalog. Alle Kontexte und der Testserver werden geschlossen.
 - `.github/workflows/ci.yml`: Syntax- und netzwerkfreie Funktionstests unter Node 22/Python 3.12; kein Deployment.
 
-Keine Frontend-Laufzeitabhängigkeiten, keine Telemetrie, kein externer Font, keine Datenbank. Für die reale Datenübernahme werden `7z` und `pdftotext` benötigt. Gebündelte Tarifdaten und Originale bleiben ignoriert; der Code enthält keine Praxis-/Patientendaten.
+Keine Frontend-Laufzeitabhängigkeiten, keine Telemetrie, kein externer Font, keine Datenbank. Für die reale Datenübernahme werden `7z` und `pdftotext` benötigt. Der veröffentlichte Katalog und die beiden PDFs sind versioniert; Rohdownloads, zusätzliche Datendateien und persönliche Exporte bleiben ignoriert. Der Code enthält keine Praxis-/Patientendaten.
 
 ## Datenverträge
 
@@ -25,7 +25,7 @@ Katalog: `schemaVersion: 1`; Quellversionen getrennt von Abrufzeit halten. Einde
 
 Arbeitsstand: localStorage-Schlüssel `dentotar.workspace.v1` mit `schemaVersion: 1`, globaler Tarifart, CHF/TP, PP-Profil, aktuellem Plan, Favoriten und benannten Plan-Momentaufnahmen. Zeilen enthalten eindeutige ID, wörtliche Tarifziffer, ganzzahlige Anzahl, nullable privaten TP-Override und Notiz. Ein `null`-Override folgt dem PP-Profil; Sozialtarif ignoriert private Overrides, ohne sie zu löschen.
 
-Portabler Export: `kind: dentotar-plan`, Schema, Katalogversion, Tarifart, TPW, PP-Profil und Plan. Import zuerst vollständig validieren, danach gegebenenfalls Ersatz bestätigen. Unbekannte Ziffern bleiben als ungültige Zeilen sichtbar. Kein Katalogimport aus fremden JSON-Dateien. CSV schützt textuelle Zellen vor Formelinjektion.
+Portabler Export: `kind: dentotar-plan`, Schema, Katalogversion, Tarifart, TPW, PP-Profil und Plan. Import zuerst vollständig validieren, danach gegebenenfalls Ersatz bestätigen. Unbekannte Ziffern bleiben als ungültige Zeilen sichtbar. Katalog- und Planimporte verwenden getrennte Eingaben und werden vor Aktivierung validiert. CSV schützt textuelle Zellen vor Formelinjektion.
 
 ## Verlässlichkeit
 
@@ -48,8 +48,10 @@ Portabler Export: `kind: dentotar-plan`, Schema, Katalogversion, Tarifart, TPW, 
 3. `npm run check` und `npm test` ausführen; bei UI-/Persistenzänderungen zusätzlich native Browserprüfung.
 4. Desktop, Tablet, 390 und 320 px prüfen; echte Listenzeilen, Details und das Ende der Zusammenstellung anschauen.
 5. Vor jedem Commit ignorierte Quelldateien, lokale Daten und vollständigen Staging-Diff kontrollieren.
-6. Keine Tarifdaten oder Builds öffentlich deployen, solange die Rechte nicht geklärt sind.
+6. Nur die dokumentierten Katalog-/Originaldateien veröffentlichen; niemals persönliche Pläne oder beliebige zusätzliche Datendateien übernehmen.
 
 ## Öffentliche Pages-Version
 
-Der Pages-Build markiert den Einstieg mit `meta[name="dentotar-catalog"][content="local-file"]`. In diesem Modus wird kein Katalog vom Host angefragt. Zuerst erscheint eine lokale Dateiauswahl; nach erfolgreicher Prüfung läuft dieselbe Suche/Rechenoberfläche. Die gewählte Datei bleibt ausschliesslich im Arbeitsspeicher; keine Uploads, kein Katalog in localStorage oder IndexedDB. Nach Reload erneut wählen, ohne den gespeicherten Arbeitsstand zu ändern. Katalog- und Plan-Import sind getrennte Eingaben. In der Pages-Version führen PDF-Links direkt zum Herausgeber; die lokale App behält ihre lokalen PDFs. Der ursprüngliche lokale Start mit automatisch geladenem Katalog bleibt erhalten.
+Der Pages-Build markiert den Einstieg mit `meta[name="dentotar-catalog"][content="hosted"]` und erlaubt mit `connect-src 'self'` den Abruf des bereitgestellten Katalogs vom eigenen Host. Die App lädt `./data/catalog.json` automatisch, validiert sie und aktiviert dieselbe Suche/Rechenoberfläche wie lokal. Keine Dateiauswahl ist erforderlich, auch nicht nach einem Reload. PDF-Links führen zu den mitgelieferten Originalen unter `./data/` und behalten ihre Seitenfragmente. Der Build enthält ausschliesslich die explizite Datei-Allowlist inklusive der drei freigegebenen Datendateien. Zusätzliche private Dateien unter `public/` werden nicht übernommen.
+
+Arbeitsstand, Favoriten und benannte Pläne bleiben im lokalen Browser-Speicher; es gibt keine Schreib-/Upload-API. Falls der automatische Katalogabruf scheitert, kann eine lokale Ersatzdatei mit demselben strikten Parser geöffnet werden. Eine solche Ersatzdatei bleibt im Arbeitsspeicher; nach dem Reload wird wieder der bereitgestellte Katalog automatisch geladen, ohne den gespeicherten Arbeitsstand zurückzusetzen.
