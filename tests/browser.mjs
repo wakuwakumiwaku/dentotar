@@ -5,6 +5,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { performance } from 'node:perf_hooks';
 import { createAppServer } from '../scripts/serve.mjs';
+import { checkImportRaces } from './import-race-browser.mjs';
 
 // Optional native QA. No browser/runtime dependencies are shipped with the application.
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
@@ -272,6 +273,13 @@ try {
     await add(two, '4.0000'); await one.locator('#storage-warning').waitFor({ state: 'visible' });
     const before = await rawState(one); await add(one, '4.0020'); assert.equal(await rawState(one), before);
     await concurrent.close();
+  });
+  await check('obsolete plan reads cannot overwrite a newer native import or its persisted reload', async () => {
+    const isolated = await context();
+    try {
+      report.importRaceObservations = [];
+      await checkImportRaces(await isolated.newPage(), origin, report.importRaceObservations);
+    } finally { await isolated.close(); }
   });
   await check('print stylesheet isolates a complete source-labelled print view', async () => {
     await page.setViewportSize({ width: 1440, height: 1000 });

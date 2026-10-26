@@ -13,7 +13,7 @@ const tp = value => value == null ? '—' : pointsFormat.format(Number(value));
 const STORAGE_KEY = 'dentotar.workspace.v1';
 let state = createState(), catalog, index, lookup, chapterLookup, sectionLookup, result, chapter = '', onlyFavorites = false, visible = 50;
 let storageLocked = false, protectedRaw = null, toastTimer;
-let catalogIsFile = false, catalogRead = 0;
+let catalogIsFile = false, catalogRead = 0, planRead = 0;
 
 function toast(message) {
   clearTimeout(toastTimer);
@@ -322,15 +322,18 @@ function bindEvents() {
   $('#import-button').addEventListener('click', () => $('#import-file').click());
   $('#import-file').addEventListener('change', async event => {
     const file = event.target.files[0]; if (!file) return;
+    const generation = ++planRead;
     try {
       if (file.size > 2 * 1024 * 1024) throw new Error('Datei zu gross (maximal 2 MB).');
-      const incoming = importPlan(JSON.parse(await file.text()), catalog.version);
+      const text = await file.text();
+      if (generation !== planRead) return;
+      const incoming = importPlan(JSON.parse(text), catalog.version);
       if (state.plan.lines.length && !confirm('Datei geprüft. Aktuelle Zusammenstellung durch den Import ersetzen?')) return;
       state.plan = incoming.plan; state.mode = incoming.mode; state.privateLevel = incoming.privateLevel; state.taxPointValue = incoming.taxPointValue;
       syncFields(); renderCalculator(); renderCatalog(); const saved = persist();
       toast(incoming.versionMismatch ? 'Importierter Katalogstand weicht ab. Werte bitte prüfen.' : saved ? 'Zusammenstellung importiert und lokal gespeichert.' : 'Import nur im Arbeitsspeicher. Bitte als JSON sichern.');
-    } catch (error) { toast(`Import abgelehnt: ${error.message}`); }
-    finally { event.target.value = ''; }
+    } catch (error) { if (generation === planRead) toast(`Import abgelehnt: ${error.message}`); }
+    finally { if (generation === planRead) event.target.value = ''; }
   });
   for (const view of ['catalog', 'plan']) $(`#${view}-tab`).addEventListener('click', () => {
     document.body.dataset.view = view;

@@ -37,6 +37,8 @@ Unter Ubuntu lassen sich die Import-Werkzeuge mit `sudo apt install p7zip-full p
 
 Browser-Speicher ist an die genaue Adresse gebunden. `localhost`, `127.0.0.1` und andere Ports sind verschiedene Speicherorte. Regelmässig JSON exportieren. Keine Patientendaten eintragen.
 
+Bei mehreren kurz nacheinander ausgewählten JSON-Planimporten gilt nur die zuletzt ausgewählte Datei. Ein älterer, noch laufender Lesevorgang darf weder den Arbeitsstand ersetzen noch eine veraltete Fehlermeldung anzeigen. Wird die letzte Datei abgelehnt oder ihr Ersatz abgebrochen, bleibt der vorherige Arbeitsstand erhalten; ältere Importe werden nicht nachträglich aktiviert.
+
 ## Datenstand und Grenzen
 
 Grundlage sind der offizielle MTK/ZMT-Katalog Tarif 222, V2.00 vom 01.01.2025, und die separat ausgewiesenen Kurztexte der SSO V25.1, März 2025.[1][3] Der volle Originaltext bleibt für Auslegung und Regeln massgeblich.[3] Unterschiedliche Quellen werden nicht stillschweigend vermischt: fehlende Sozialversicherungs-Taxpunkte bleiben unbekannt, auch wenn die Kurztexttabelle einen Zahlenwert enthält.
@@ -72,6 +74,8 @@ npm run test:browser
 ```
 
 Die Browserprüfung verwendet einen eigenen dynamischen lokalen Port und neue Browser-Kontexte. Persönliche Browserprofile bleiben unberührt. Sie prüft echte Downloads, native Dateiauswahl, Reload-Persistenz, Eingabefehler, Speicherausfälle, parallele Tabs und Layoutbreiten 320–1440 px. Ergebnisdateien und Screenshots liegen ausschliesslich in `.local/qa/`. Der Druckdialog wird im Test abgefangen; die echte Druckansicht wird mit Print-Medienregeln geprüft, nicht als native PDF-Datei ausgegeben.
+
+`npm test` prüft zusätzlich konkurrierende Planimporte über die tatsächlichen App-Handler mit einem minimalen Test-DOM. `npm run test:import-browser` führt die zugehörige native Dateiauswahl-/Persistenz-/Reload-Prüfung separat mit demselben Browser-Setup aus; sie ist auch in `test:browser` enthalten. Nur die Auflösung von `File.text()` wird für die deterministische Reihenfolge verzögert, nicht Importvalidierung, Bestätigungsdialog oder Speicherung.
 
 Die Pages-Workflow-Datei erstellt und veröffentlicht nur `dist-pages/`; sie führt keinen Datenimport aus. `npm test` prüft zusätzlich mit privaten Testmarkern, dass nur die ausdrücklich vorgesehenen Katalog-/PDF-Dateien in den Build gelangen und zusätzliche private Dateien ausgeschlossen bleiben. `npm run test:pages` prüft optional mit dem oben beschriebenen Browser-Setup automatisches Laden ohne Dateiauswahl, Berechnung, bereitgestellte Original-PDFs, Reload, Downloads und 320–1440-px-Layouts unter dem Pages-Unterpfad. Fehler beim Laden und die native Ersatz-Dateiauswahl werden zusätzlich geprüft. Persönliche Eingaben werden nicht hochgeladen.
 

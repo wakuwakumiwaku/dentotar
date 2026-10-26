@@ -16,6 +16,7 @@
 - `tests/domain.test.mjs`, `tests/server.test.mjs`, `tests/test_import_catalog.py`: netzwerkfreie Regressionstests mit synthetischen Daten.
 - `tests/search.test.mjs`: vollständige geordnete Trefferparität am gebündelten echten Katalog und zusätzliche numerische Sortier-/Favoritenkontrollen; `tests/catalog-switch.test.mjs` prüft alle drei Kataloglinks und die genau eine aktuelle Seite.
 - `tests/browser.mjs`: optionale native Headless-Camoufox-Prüfung am tatsächlich importierten Katalog. Alle Kontexte und der Testserver werden geschlossen.
+- `tests/import-race.test.mjs`: tatsächliche App-Handler im minimalen Test-DOM gegen überholte Planlesevorgänge prüfen. `tests/import-race-browser.mjs` prüft dieselbe Grenze zusätzlich mit nativer Dateiauswahl, echten Bestätigungen, localStorage und Reload; eigenständig und in der vollständigen Browserprüfung registriert.
 - `.github/workflows/ci.yml`: Syntax- und netzwerkfreie Funktionstests unter Node 22/Python 3.12; kein Deployment.
 
 Keine Frontend-Laufzeitabhängigkeiten, keine Telemetrie, kein externer Font, keine Datenbank. Für die reale Datenübernahme werden `7z` und `pdftotext` benötigt. Der veröffentlichte Katalog und die beiden PDFs sind versioniert; Rohdownloads, zusätzliche Datendateien und persönliche Exporte bleiben ignoriert. Der Code enthält keine Praxis-/Patientendaten.
@@ -39,6 +40,7 @@ Portabler Export: `kind: dentotar-plan`, Schema, Katalogversion, Tarifart, TPW, 
 - Bei Schreibfehlern ist die Rechenansicht weiter benutzbar; Speicherstatus und Exportmöglichkeit bleiben ehrlich.
 - Ein externer `storage`-Event pausiert eigene weitere Schreibvorgänge bis zum Neuladen. Keine behauptete Transaktion oder automatische Konfliktauflösung zwischen Tabs.
 - Ungültige Zwischen-Eingaben nicht speichern und nicht als vollständige Gesamtsumme präsentieren.
+- Planimporte über eine Lesegeneration an die letzte Dateiauswahl binden. Vor Parsing/Validierung und jeder Aktivierung die Generation prüfen; auch Fehlermeldung und Zurücksetzen des gemeinsamen Dateifelds gehören nur dem aktuellen Lesevorgang. Ein neuer, abgelehnter oder abgebrochener Import reaktiviert keine ältere Auswahl.
 - CSV und Druck bei ihrer Auslösung aus dem aktuellen Arbeitsstand berechnen, statt einen älteren Render-Snapshot zu exportieren. Direkt geänderte, ersetzte und geleerte Zeilennotizen ohne zwischenzeitlichen Reload/Rechenfeldwechsel nativ prüfen.
 - Pläne und Favoriten sind keine dauerhafte Datensicherung; JSON exportieren. Adresse/Port bei normaler Nutzung beibehalten.
 
