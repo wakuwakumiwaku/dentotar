@@ -6,6 +6,7 @@ import os from 'node:os';
 import { performance } from 'node:perf_hooks';
 import { createAppServer } from '../scripts/serve.mjs';
 import { checkImportRaces } from './import-race-browser.mjs';
+import { checkFixedSocial } from './fixed-social-browser.mjs';
 
 // Optional native QA. No browser/runtime dependencies are shipped with the application.
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
@@ -65,6 +66,9 @@ const waitText = async (page, selector, text) => { await page.waitForFunction(({
 
 try {
   browser = await playwright.firefox.launch({ executablePath, headless: true });
+  await check('social fixed CHF ignores retained private TP overrides through native import, mode changes, exports, print and reload at desktop/narrow widths', async () => {
+    report.fixedSocial = await checkFixedSocial({browser, origin, catalog, output: OUT});
+  });
   await check('failed named save cannot publish phantom snapshots; native export/import and reload retry stay usable', async () => {
     const isolated = await context(), imported = await context();
     try {

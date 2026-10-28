@@ -149,7 +149,7 @@ export function calculatePlan(state, positions) {
       if (!position) throw new Error('Position nicht im geladenen Katalog.');
       amountCHF = fixedAmount(position, state.mode);
       if (amountCHF !== null) {
-        if (line.points !== null) throw new Error('CHF-Fixbeträge erlauben keinen Taxpunkt-Override.');
+        if (state.mode === 'private' && line.points !== null) throw new Error('CHF-Fixbeträge erlauben keinen Taxpunkt-Override.');
         amountCents = moneyCents(amountCHF, '1', line.quantity);
       } else {
         points = state.mode === 'private' && line.points !== null ? line.points
