@@ -65,6 +65,40 @@ const waitText = async (page, selector, text) => { await page.waitForFunction(({
 
 try {
   browser = await playwright.firefox.launch({ executablePath, headless: true });
+  await check('pre-event cross-tab drift preserves external bytes and exports the refused local edit', async () => {
+    const isolated = await context();
+    try {
+      const local = await isolated.newPage(); await ready(local);
+      await local.locator('#plan-title').fill('Synthetic original title');
+      const other = await isolated.newPage(); await ready(other);
+      // Delay only the app's notification of a real second-page write. The
+      // synchronous storage boundary and all product handlers stay native.
+      await local.evaluate(() => {
+        window.__heldStorageEvents = 0;
+        window.addEventListener('storage', event => {
+          if (event.key === 'dentotar.workspace.v1') {
+            window.__heldStorageEvents++; event.stopImmediatePropagation();
+          }
+        }, true);
+      });
+      await other.locator('#plan-title').fill('Synthetic external title');
+      await local.waitForFunction(() => window.__heldStorageEvents > 0);
+      const externalRaw = await rawState(other);
+      assert.equal(await local.locator('#storage-warning').isVisible(), false);
+      await local.locator('#plan-title').fill('Synthetic unsaved local title');
+      assert.equal(await rawState(local), externalRaw, 'pre-event local edit must not overwrite external raw state');
+      assert.equal(await local.locator('#storage-warning').isVisible(), true);
+      assert.match(await local.locator('#save-status').textContent(), /pausiert|Nicht gespeichert/);
+      const waiting = local.waitForEvent('download'); await local.locator('#json-export').click();
+      const target = path.join(OUT, 'storage-drift-local-draft.json'); await (await waiting).saveAs(target);
+      assert.equal(JSON.parse(await readFile(target, 'utf8')).plan.title, 'Synthetic unsaved local title');
+      await local.locator('#plan-title').fill('Synthetic continued local title');
+      assert.equal(await rawState(local), externalRaw);
+      await local.reload(); await local.waitForFunction(() => document.body.dataset.ready === 'true');
+      assert.equal(await local.locator('#plan-title').inputValue(), 'Synthetic external title');
+      assert.equal(await rawState(local), externalRaw);
+    } finally { await isolated.close(); }
+  });
   const ctx = await context(); const page = await ctx.newPage();
   await check('full catalog loads and paginates without dropping rows', async () => {
     await ready(page);

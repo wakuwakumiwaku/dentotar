@@ -38,7 +38,7 @@ Portabler Export: `kind: dentotar-plan`, Schema, Katalogversion, Tarifart, TPW, 
 - Nichtkumulationen und Paketüberschneidungen sind abgeleitete Hinweise, keine vollständige Abrechnungsprüfung.
 - Bei unlesbarem Speicher keine automatische Ersetzung durchführen. Original-Rohstring unverändert zum Download anbieten; Speicherung bleibt gesperrt.
 - Bei Schreibfehlern ist die Rechenansicht weiter benutzbar; Speicherstatus und Exportmöglichkeit bleiben ehrlich.
-- Ein externer `storage`-Event pausiert eigene weitere Schreibvorgänge bis zum Neuladen. Keine behauptete Transaktion oder automatische Konfliktauflösung zwischen Tabs.
+- Ein externer `storage`-Event pausiert eigene weitere Schreibvorgänge bis zum Neuladen. Zusätzlich vor jedem Write den aktuellen Rohwert mit dem gelesenen bzw. zuletzt selbst gespeicherten Rohwert vergleichen: bei Abweichung fremde Bytes unverändert lassen, Schreiben pausieren und lokale Änderungen für JSON-Export im Arbeitsspeicher behalten. Das ist keine atomare Transaktion oder automatische Konfliktauflösung zwischen Tabs.
 - Ungültige Zwischen-Eingaben nicht speichern und nicht als vollständige Gesamtsumme präsentieren.
 - Planimporte über eine Lesegeneration an die letzte Dateiauswahl binden. Vor Parsing/Validierung und jeder Aktivierung die Generation prüfen; auch Fehlermeldung und Zurücksetzen des gemeinsamen Dateifelds gehören nur dem aktuellen Lesevorgang. Ein neuer, abgelehnter oder abgebrochener Import reaktiviert keine ältere Auswahl.
 - CSV und Druck bei ihrer Auslösung aus dem aktuellen Arbeitsstand berechnen, statt einen älteren Render-Snapshot zu exportieren. Direkt geänderte, ersetzte und geleerte Zeilennotizen ohne zwischenzeitlichen Reload/Rechenfeldwechsel nativ prüfen.

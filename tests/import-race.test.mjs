@@ -16,7 +16,7 @@ async function app() {
   };
   const context = vm.createContext({ ...domain, ...catalogs, structuredClone, performance,
     document: { querySelector: element, querySelectorAll: () => [], body: { dataset: {} }, addEventListener() {} },
-    window: { addEventListener() {} }, localStorage: { setItem: (k, v) => storage.set(k, v) },
+    window: { addEventListener() {} }, localStorage: { getItem: k => storage.get(k) ?? null, setItem: (k, v) => storage.set(k, v) },
     confirm: () => true, setTimeout: () => 1, clearTimeout() {} });
   const source = await readFile(new URL('../src/app.js', import.meta.url), 'utf8');
   vm.runInContext(source.replace(/^import[\s\S]*?from '\.\/catalog\.js';\n/, '')

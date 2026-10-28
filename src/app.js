@@ -12,7 +12,7 @@ const chf = cents => amountFormat.format(cents / 100);
 const tp = value => value == null ? '—' : pointsFormat.format(Number(value));
 const STORAGE_KEY = 'dentotar.workspace.v1';
 let state = createState(), catalog, index, lookup, chapterLookup, sectionLookup, result, chapter = '', onlyFavorites = false, visible = 50;
-let storageLocked = false, protectedRaw = null, toastTimer;
+let storageLocked = false, protectedRaw = null, storageRaw = null, toastTimer;
 let catalogIsFile = false, catalogRead = 0, planRead = 0;
 
 function toast(message) {
@@ -36,6 +36,7 @@ function hydrate() {
   let raw;
   try {
     raw = localStorage.getItem(STORAGE_KEY);
+    storageRaw = raw;
     if (raw !== null) state = validateState(JSON.parse(raw));
   } catch {
     storageWarning('Lokaler Speicher nicht lesbar. Vorhandene Daten werden nicht überschrieben; Änderungen bleiben nur im Arbeitsspeicher.', raw ?? null);
@@ -51,7 +52,14 @@ function persist() {
   try { valid = validateState(state); }
   catch { $('#save-status').textContent = 'Ungültige Eingaben werden nicht gespeichert.'; return false; }
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(valid));
+    const raw = JSON.stringify(valid);
+    if (localStorage.getItem(STORAGE_KEY) !== storageRaw) {
+      storageWarning('Eine andere Registerkarte hat den Speicher geändert. Automatisches Speichern pausiert. Vor dem Weiterarbeiten neu laden oder den aktuellen Plan als JSON sichern.');
+      $('#save-status').textContent = 'Speichern pausiert · andere Registerkarte';
+      return false;
+    }
+    localStorage.setItem(STORAGE_KEY, raw);
+    storageRaw = raw;
     $('#save-status').textContent = 'Automatisch in diesem Browser gespeichert';
     return true;
   } catch {
