@@ -43,13 +43,13 @@ function hydrate() {
   }
 }
 
-function persist() {
+function persist(candidate = state) {
   if (storageLocked) {
     $('#save-status').textContent = 'Nicht gespeichert. JSON-Export zur Sicherung verwenden.';
     return false;
   }
   let valid;
-  try { valid = validateState(state); }
+  try { valid = validateState(candidate); }
   catch { $('#save-status').textContent = 'Ungültige Eingaben werden nicht gespeichert.'; return false; }
   try {
     const raw = JSON.stringify(valid);
@@ -306,9 +306,11 @@ function bindEvents() {
     try {
       validateState(state);
       if (state.savedPlans.length >= LIMITS.savedPlans) throw new Error(`Maximal ${LIMITS.savedPlans} gespeicherte Pläne. Vorher einen exportieren und entfernen.`);
-      state.savedPlans.push({ id: crypto.randomUUID(), savedAt: new Date().toISOString(), catalogVersion: catalog.version,
-        mode: state.mode, privateLevel: state.privateLevel, taxPointValue: state.taxPointValue, plan: structuredClone(state.plan) });
-      if (persist()) toast('Zusammenstellung lokal gespeichert.');
+      const saved = { id: crypto.randomUUID(), savedAt: new Date().toISOString(), catalogVersion: catalog.version,
+        mode: state.mode, privateLevel: state.privateLevel, taxPointValue: state.taxPointValue, plan: structuredClone(state.plan) };
+      const candidate = { ...state, savedPlans: [...state.savedPlans, saved] };
+      if (persist(candidate)) { state = candidate; toast('Zusammenstellung lokal gespeichert.'); }
+      else toast('Zusammenstellung nicht lokal gespeichert. Aktuellen Plan bitte als JSON sichern.');
     } catch (error) { toast(error.message); }
   });
   $('#saved-button').addEventListener('click', () => { renderSaved(); openDialog('#saved-dialog'); });

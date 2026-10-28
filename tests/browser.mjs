@@ -9,11 +9,11 @@ import { checkImportRaces } from './import-race-browser.mjs';
 
 // Optional native QA. No browser/runtime dependencies are shipped with the application.
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
-const OUT = path.join(ROOT, '.local', 'qa', new Date().toISOString().replaceAll(':', '-'));
+const OUT = process.env.DENTOTAR_QA_OUTPUT || path.join(ROOT, '.local', 'qa', new Date().toISOString().replaceAll(':', '-'));
 await mkdir(OUT, { recursive: true });
 const playwright = process.env.PLAYWRIGHT_MODULE
   ? await import(pathToFileURL(process.env.PLAYWRIGHT_MODULE).href) : await import('playwright-core');
-const executablePath = process.env.CAMOUFOX_EXECUTABLE || path.join(os.homedir(), '.cache/camoufox/camoufox');
+const executablePath = process.env.BROWSER_EXECUTABLE || process.env.CAMOUFOX_EXECUTABLE || path.join(os.homedir(), '.cache/camoufox/camoufox');
 const catalog = JSON.parse(await readFile(path.join(ROOT, 'public/data/catalog.json'), 'utf8'));
 const server = createAppServer({ root: ROOT });
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -65,6 +65,86 @@ const waitText = async (page, selector, text) => { await page.waitForFunction(({
 
 try {
   browser = await playwright.firefox.launch({ executablePath, headless: true });
+  await check('failed named save cannot publish phantom snapshots; native export/import and reload retry stay usable', async () => {
+    const isolated = await context(), imported = await context();
+    try {
+      const p = await isolated.newPage(); await ready(p); await add(p, '4.0000');
+      await p.locator('#plan-title').fill('Existing native snapshot'); await p.locator('#save-plan').click();
+      await p.locator('#plan-title').fill('Native active draft'); await p.locator('[data-note]').fill('Synthetic unsaved-snapshot note');
+      const before = await rawState(p), prior = JSON.parse(before);
+      await p.evaluate(() => {
+        window.__originalSetItem = Storage.prototype.setItem;
+        window.__namedSaveAttempts = 0;
+        Storage.prototype.setItem = function(key, value) {
+          if (key === 'dentotar.workspace.v1') {
+            window.__namedSaveAttempts++;
+            throw new DOMException('synthetic named-save quota failure', 'QuotaExceededError');
+          }
+          return window.__originalSetItem.call(this, key, value);
+        };
+      });
+      await p.locator('#save-plan').click();
+      await p.locator('#saved-button').click();
+      assert.equal(await p.locator('.saved-item').count(), 1, 'persist refusal must not publish a phantom named snapshot');
+      assert.equal(await p.locator('.saved-item h3').textContent(), 'Existing native snapshot');
+      await p.locator('#saved-dialog [data-close]').click();
+      for (let i = 0; i < 31; i++) await p.locator('#save-plan').click();
+      assert.match(await p.locator('#toast').textContent(), /nicht.*gespeichert/i);
+      assert.match(await p.locator('#toast').textContent(), /JSON/);
+      assert.equal(await rawState(p), before);
+      assert.equal(await p.evaluate(() => window.__namedSaveAttempts), 1);
+      const waiting = p.waitForEvent('download'); await p.locator('#json-export').click();
+      const target = path.join(OUT, 'refused-named-save-active-draft.json'); await (await waiting).saveAs(target);
+      const exported = JSON.parse(await readFile(target, 'utf8'));
+      assert.deepEqual(exported.plan, prior.plan);
+      const restored = await imported.newPage(); await ready(restored);
+      await restored.locator('#import-file').setInputFiles(target);
+      await waitText(restored, '#toast', 'importiert und lokal gespeichert');
+      assert.deepEqual(JSON.parse(await rawState(restored)).plan, prior.plan, 'real File import must recover the exported draft');
+      await restored.locator('#save-plan').click();
+      await answerDialog(restored, true, () => restored.locator('#clear-plan').click());
+      assert.equal(await restored.locator('.plan-line').count(), 0);
+      await restored.locator('#saved-button').click(); await restored.locator('[data-load-saved]').click();
+      assert.deepEqual(JSON.parse(await rawState(restored)).plan, prior.plan, 'clear/restore must retain the durable snapshot');
+      await p.evaluate(() => { Storage.prototype.setItem = window.__originalSetItem; });
+      await p.reload(); await p.waitForFunction(() => document.body.dataset.ready === 'true');
+      await p.locator('#saved-button').click(); assert.equal(await p.locator('.saved-item').count(), 1);
+      await p.locator('#saved-dialog [data-close]').click(); await p.locator('#save-plan').click();
+      const durable = await rawState(p);
+      assert.equal(JSON.parse(durable).savedPlans.length, 2, 'retry after reload must add exactly one durable snapshot');
+      await p.reload(); await p.waitForFunction(() => document.body.dataset.ready === 'true');
+      assert.equal(await rawState(p), durable);
+      await p.locator('#saved-button').click(); assert.equal(await p.locator('.saved-item').count(), 2);
+    } finally { await isolated.close(); await imported.close(); }
+  });
+  await check('pre-event drift refusal does not adopt a named snapshot while external bytes and current export survive', async () => {
+    const isolated = await context();
+    try {
+      const local = await isolated.newPage(); await ready(local); await add(local, '4.0000');
+      await local.locator('#plan-title').fill('Local before external save');
+      const other = await isolated.newPage(); await ready(other);
+      await local.evaluate(() => {
+        window.__heldNamedStorageEvents = 0;
+        window.addEventListener('storage', event => {
+          if (event.key === 'dentotar.workspace.v1') { window.__heldNamedStorageEvents++; event.stopImmediatePropagation(); }
+        }, true);
+      });
+      await other.locator('#plan-title').fill('External durable workspace');
+      await local.waitForFunction(() => window.__heldNamedStorageEvents > 0);
+      const external = await rawState(other);
+      assert.equal(await local.locator('#storage-warning').isVisible(), false);
+      await local.locator('#save-plan').click(); await local.locator('#saved-button').click();
+      assert.equal(await local.locator('.saved-item').count(), 0, 'drift refusal must not adopt the candidate snapshot');
+      assert.equal(await rawState(local), external);
+      await local.locator('#saved-dialog [data-close]').click();
+      const waiting = local.waitForEvent('download'); await local.locator('#json-export').click();
+      const target = path.join(OUT, 'drift-refused-named-save.json'); await (await waiting).saveAs(target);
+      assert.equal(JSON.parse(await readFile(target, 'utf8')).plan.title, 'Local before external save');
+      await local.reload(); await local.waitForFunction(() => document.body.dataset.ready === 'true');
+      assert.equal(await local.locator('#plan-title').inputValue(), 'External durable workspace');
+      assert.equal(await rawState(local), external);
+    } finally { await isolated.close(); }
+  });
   await check('pre-event cross-tab drift preserves external bytes and exports the refused local edit', async () => {
     const isolated = await context();
     try {
