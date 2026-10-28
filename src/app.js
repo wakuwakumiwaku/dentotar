@@ -139,7 +139,23 @@ function addPosition(code) {
   renderCalculator(); persist(); toast(`${code} hinzugefügt`);
 }
 
-function renderCalculator() {
+function refreshPlanLine(line) {
+  const element = $('#plan-lines').querySelector(`[data-line="${line.id}"]`);
+  element.querySelector('.line-amount').textContent = line.amountCents === null ? '—' : `CHF ${chf(line.amountCents)}`;
+  element.querySelector('[data-points]').setAttribute('aria-invalid', String(Boolean(line.errors.length)));
+  if (line.overridePoints !== null && state.mode === 'private' && !element.querySelector('[data-reset-points]')) {
+    const button = document.createElement('button');
+    button.className = 'reset-points'; button.dataset.resetPoints = line.id;
+    button.textContent = 'Referenz/Profil verwenden'; element.append(button);
+  }
+  for (const error of element.querySelectorAll('.line-error')) error.remove();
+  for (const message of line.errors) {
+    const error = document.createElement('p');
+    error.className = 'line-error'; error.textContent = message; element.append(error);
+  }
+}
+
+function renderCalculator(changedLineId = null) {
   $('#private-mode').classList.toggle('active', state.mode === 'private');
   $('#social-mode').classList.toggle('active', state.mode === 'social');
   $('#private-mode').setAttribute('aria-pressed', String(state.mode === 'private'));
@@ -159,7 +175,10 @@ function renderCalculator() {
   const count = state.plan.lines.length;
   $('#plan-count').textContent = count;
   $('#mobile-count').textContent = count;
-  $('#plan-lines').innerHTML = count ? result.lines.map(line => {
+  // Field commits refresh derived content only: do not rewrite values or refocus
+  // controls, including a blur-time change while Tab is moving to the next field.
+  if (changedLineId !== null) refreshPlanLine(result.lines.find(line => line.id === changedLineId));
+  else $('#plan-lines').innerHTML = count ? result.lines.map(line => {
     const row = line.position;
     const range = row?.privateMin != null && row?.privateMax != null ? `${tp(row.privateMin)}–${tp(row.privateMax)}` : 'kein Rahmen';
     return `<article class="plan-line" data-line="${h(line.id)}"><div class="line-top"><button class="line-code" data-detail="${h(line.code)}">${h(line.code)}</button><span class="line-title">${h(row?.shortTitle || row?.title || 'Unbekannte Position')}</span><button class="remove-line icon-button" data-remove="${h(line.id)}" aria-label="${h(line.code)} entfernen">${icon('close')}</button></div><div class="line-fields"><label class="qty-field">Anzahl<input type="number" min="1" max="999" step="1" value="${h(line.quantity)}" data-quantity="${h(line.id)}" aria-label="Anzahl ${h(line.code)}"></label><label class="points-field">${line.amountCHF !== null ? 'CHF je Einheit · fix' : state.mode === 'private' ? `TP · ${range}` : `TP · ${h(row?.coverage || 'keine Deckung')}`}<input type="text" inputmode="decimal" value="${h(line.amountCHF !== null ? amountFormat.format(line.amountCHF) : state.mode === 'private' && line.overridePoints !== null ? line.overridePoints : line.points ?? '')}" data-points="${h(line.id)}" aria-label="${line.amountCHF !== null ? 'CHF-Fixbetrag' : 'Taxpunkte'} ${h(line.code)}" ${state.mode === 'social' || line.amountCHF !== null ? 'readonly' : ''} ${line.errors.length ? 'aria-invalid="true"' : ''}></label><span class="line-amount">${line.amountCents === null ? '—' : `CHF ${chf(line.amountCents)}`}</span></div><input class="line-note" maxlength="1000" value="${h(line.note)}" data-note="${h(line.id)}" placeholder="Notiz, z. B. Zahn / Sitzung (optional)" aria-label="Notiz ${h(line.code)}">${line.overridePoints !== null && state.mode === 'private' ? `<button class="reset-points" data-reset-points="${h(line.id)}">Referenz/Profil verwenden</button>` : ''}${line.errors.map(error => `<p class="line-error">${h(error)}</p>`).join('')}</article>`;
@@ -278,7 +297,7 @@ function bindEvents() {
     if (!line) return;
     if (target.dataset.quantity) line.quantity = Number(target.value);
     else if (state.mode === 'private') line.points = target.value;
-    renderCalculator(); persist();
+    renderCalculator(id); persist();
   });
   $('#plan-lines').addEventListener('input', event => {
     const id = event.target.dataset.note;

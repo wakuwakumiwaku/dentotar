@@ -220,10 +220,27 @@ try {
   });
   await check('assembly recalculates amount, quantity and custom PP points', async () => {
     await add(page, '4.0000'); assert.equal(await page.locator('#total-amount').textContent(), '73.20');
-    await page.locator('[data-quantity]').fill('2'); await page.locator('[data-quantity]').press('Tab');
+    const quantity = await page.locator('[data-quantity]').elementHandle();
+    const points = await page.locator('[data-points]').elementHandle();
+    const note = await page.locator('[data-note]').elementHandle();
+    const connected = async () => {
+      for (const field of [quantity, points, note]) assert.ok(await field.evaluate(input => input.isConnected));
+    };
+    await quantity.focus(); await quantity.press('ArrowUp');
+    await waitText(page, '#total-amount', '146.40'); await connected();
+    assert.ok(await quantity.evaluate(input => document.activeElement === input));
+    assert.equal(JSON.parse(await rawState(page)).plan.lines[0].quantity, 2);
+    await quantity.press('ArrowDown'); await waitText(page, '#total-amount', '73.20'); await connected();
+    assert.ok(await quantity.evaluate(input => document.activeElement === input));
+    assert.equal(JSON.parse(await rawState(page)).plan.lines[0].quantity, 1);
+    await quantity.fill('2'); await quantity.press('Tab'); await connected();
+    assert.ok(await points.evaluate(input => document.activeElement === input), 'Tab from quantity must reach the existing TP control');
     assert.equal(await page.locator('#total-amount').textContent(), '146.40');
-    await page.locator('[data-points]').fill('70'); await page.locator('[data-points]').press('Tab');
+    assert.equal(JSON.parse(await rawState(page)).plan.lines[0].quantity, 2);
+    await points.fill('70'); await points.press('Tab'); await connected();
+    assert.ok(await note.evaluate(input => document.activeElement === input), 'Tab from TP must reach the existing note control');
     assert.equal(await page.locator('#total-amount').textContent(), '140.00');
+    assert.equal(JSON.parse(await rawState(page)).plan.lines[0].points, '70');
     await page.locator('#tax-point').fill('1.10'); assert.equal(await page.locator('#total-amount').textContent(), '154.00');
     await page.locator('[data-note]').fill('Zahn 11, Sitzung 1');
     await page.locator('#plan-title').fill('QA Zusammenstellung');
@@ -269,8 +286,26 @@ try {
     assert.ok(await page.locator('#rate-error').isVisible()); assert.ok(await page.locator('#csv-export').isDisabled());
     assert.equal(await rawState(page), before);
     await page.locator('#tax-point').fill('1.10');
-    await page.locator('[data-points]').fill('999'); await page.locator('[data-points]').press('Tab');
+    const points = await page.locator('[data-points]').elementHandle();
+    const note = await page.locator('[data-note]').elementHandle();
+    await points.fill('999'); await points.press('Tab');
+    assert.ok(await points.evaluate(input => input.isConnected));
+    assert.ok(await note.evaluate(input => input.isConnected && document.activeElement === input));
     assert.match(await page.locator('#total-label').textContent(), /unvollständig/);
+    assert.ok(await page.locator('#csv-export').isDisabled());
+    const invalidRange = await rawState(page);
+    await points.fill('11,'); await points.press('Tab');
+    assert.equal(await points.inputValue(), '11,'); assert.equal(await rawState(page), invalidRange);
+    assert.ok(await note.evaluate(input => input.isConnected && document.activeElement === input));
+    await points.fill('70.00'); await points.press('ArrowLeft');
+    const caret = await points.evaluate(input => [input.selectionStart, input.selectionEnd]);
+    await points.press('Tab');
+    assert.ok(await note.evaluate(input => input.isConnected && document.activeElement === input));
+    assert.deepEqual(await points.evaluate(input => [input.selectionStart, input.selectionEnd]), caret);
+    assert.equal(await page.locator('#total-amount').textContent(), '154.00');
+    assert.ok(await page.locator('#csv-export').isEnabled());
+    assert.equal(JSON.parse(await rawState(page)).plan.lines[0].points, '70.00');
+    assert.equal(await page.locator('.line-error').count(), 0);
     await page.locator('[data-reset-points]').click();
   });
   await check('non-cumulation and package-member warnings are surfaced', async () => {
