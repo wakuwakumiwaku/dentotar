@@ -35,6 +35,8 @@ Unter Ubuntu lassen sich die Import-Werkzeuge mit `sudo apt install p7zip-full p
 - PP-Profil „Referenz“ verwendet UV-Taxpunkte nur innerhalb des ausgewiesenen PP-Rahmens, sonst dessen rechnerische Mitte. „Minimum“ und „Maximum“ wählen die jeweiligen Quellwerte. Manuell geänderte Zeilen bleiben von Profilwechseln unberührt; mit „Referenz/Profil verwenden“ zurücksetzen.
 - Arbeitsstand und Favoriten werden im Browser gespeichert. Benannte Momentaufnahmen zusätzlich unter „Lokal speichern“ ablegen. JSON-Dateien dienen zur portablen Sicherung und Wiederherstellung; CSV und Druckansicht dienen der Übersicht. „Drucken / PDF“ öffnet den Browser-Druckdialog, in dem PDF als Ziel gewählt werden kann.
 
+Auch Browsermenü/Strg+P bereiten die Druckansicht über `beforeprint` aus dem aktuellen Arbeitsstand neu auf, ohne eine alte Druckansicht wiederzuverwenden. Gelöschte Notizen und ersetzte Pläne bleiben gelöscht; unvollständige Berechnungen werden als solche ausgewiesen.
+
 Browser-Speicher ist an die genaue Adresse gebunden. `localhost`, `127.0.0.1` und andere Ports sind verschiedene Speicherorte. Regelmässig JSON exportieren. Keine Patientendaten eintragen.
 
 Bei mehreren kurz nacheinander ausgewählten JSON-Planimporten gilt nur die zuletzt ausgewählte Datei. Ein älterer, noch laufender Lesevorgang darf weder den Arbeitsstand ersetzen noch eine veraltete Fehlermeldung anzeigen. Wird die letzte Datei abgelehnt oder ihr Ersatz abgebrochen, bleibt der vorherige Arbeitsstand erhalten; ältere Importe werden nicht nachträglich aktiviert.

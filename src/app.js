@@ -238,12 +238,13 @@ function renderSaved() {
   $('#saved-content').innerHTML = state.savedPlans.length ? state.savedPlans.map(saved => `<article class="saved-item"><h3>${h(saved.plan.title)}</h3><p>${saved.plan.lines.length} Positionen · ${h(saved.savedAt.slice(0, 16).replace('T', ' '))} UTC · ${h(saved.catalogVersion)}</p><div class="saved-item-actions"><button class="primary-button" data-load-saved="${h(saved.id)}">Öffnen</button><button class="quiet-button" data-delete-saved="${h(saved.id)}">Entfernen</button></div></article>`).join('') : '<p class="empty-saved">Noch keine Zusammenstellung benannt gespeichert. Der aktuelle Arbeitsstand wird unabhängig davon automatisch gespeichert.</p>';
 }
 
-function printPlan() {
+function renderPrintPlan() {
   const result = calculatePlan(state, lookup);
   const table = result.lines.map(line => `<tr><td>${h(line.code)}</td><td>${h(line.position?.title || 'Unbekannte Position')}${line.note ? `<small>${h(line.note)}</small>` : ''}${line.errors.map(e => `<small class="print-error">${h(e)}</small>`).join('')}</td><td>${line.quantity}</td><td>${h(line.amountCHF !== null ? `CHF ${amountFormat.format(line.amountCHF)} fix` : line.points ?? '—')}</td><td>${line.amountCents === null ? '—' : chf(line.amountCents)}</td></tr>`).join('');
   $('#printout').innerHTML = `<div class="print-header"><h1>${h(state.plan.title)}</h1><p>DENTOTAR Browser · Persönliche Rechenhilfe · ${h(new Date().toLocaleDateString('de-CH'))}</p></div><p>Tarif: ${state.mode === 'private' ? 'Privatpatienten' : 'UV/MV/IV'} · CHF pro TP: ${h(state.taxPointValue)} · Katalogstand ${h(catalog.version)}</p>${!result.complete ? '<h2 class="print-error">UNVOLLSTÄNDIG · nur berechenbare Positionen in der Zwischensumme</h2>' : ''}<table><thead><tr><th>Ziffer</th><th>Leistung / Notiz</th><th>Anzahl</th><th>TP / CHF fix</th><th>CHF</th></tr></thead><tbody>${table}</tbody><tfoot><tr><th colspan="4">${result.complete ? 'Gesamtsumme' : 'Zwischensumme'} CHF</th><th>${chf(result.totalCents)}</th></tr></tfoot></table>${result.warnings.map(w => `<p>${h(w)}</p>`).join('')}<p>Je Position auf 0.01 CHF gerundet. Material, Labor und MwSt. nicht automatisch ergänzt. Originalregeln und Nutzungsrechte beachten. Keine geprüfte Abrechnung.</p><p>Quelle: Zahnarzt-Tarif UV/MV/IV V2.00, 01.01.2025, MTK/ZMT · https://www.mtk-ctm.ch/tarife/zahnarzt<br>SSO-Kurztext V25.1, März 2025 · https://www.sso.ch/de/Abrechnung-Dentotar</p>`;
-  window.print();
 }
+
+function printPlan() { renderPrintPlan(); window.print(); }
 
 function toggleFavorite(code) {
   if (state.favorites.includes(code)) state.favorites = state.favorites.filter(c => c !== code);
@@ -253,6 +254,7 @@ function toggleFavorite(code) {
 }
 
 function bindEvents() {
+  window.addEventListener('beforeprint', () => { if (catalog) renderPrintPlan(); });
   $('#catalog-open').addEventListener('click', () => $('#catalog-file').click());
   $('#catalog-file').addEventListener('change', async event => {
     const file = event.target.files[0];
