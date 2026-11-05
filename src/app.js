@@ -291,7 +291,7 @@ function bindEvents() {
       state.plan.lines.find(l => l.id === action.dataset.resetPoints).points = null; renderCalculator(); persist();
     }
   });
-  $('#plan-lines').addEventListener('change', event => {
+  for (const type of ['input', 'change']) $('#plan-lines').addEventListener(type, event => {
     const target = event.target;
     const id = target.dataset.quantity || target.dataset.points;
     if (!id) return;

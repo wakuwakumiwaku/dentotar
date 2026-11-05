@@ -281,3 +281,39 @@ test('recalculating retains unknown plan rows and exclusion/package warnings', a
   assert.equal(unknown.querySelector('.line-amount').textContent, '—');
   assert.equal(a.stored().plan.lines.at(-1).code, 'unknown');
 });
+
+// Input and change are different native events. Keystrokes must invalidate old
+// prices before a blur, including keyboard-triggered exports while still focused.
+test('typing quantity and private TP updates totals, persistence and exports without blur',async()=>{
+ const a=await app(),before=a.controls(),quantity=a.field('quantity'),points=a.field('points');
+ quantity.focus();quantity.value='2';quantity.fire('input');sameControls(a,before);
+ assert.equal(a.element('#total-amount').textContent,'20.20','live amount must not show the old quantity');
+ assert.equal(a.stored().plan.lines[0].quantity,2);assert.equal(a.document.activeElement,quantity);
+ points.focus();points.value='11,50';points.selectionStart=5;points.selectionEnd=5;points.fire('input');sameControls(a,before);
+ assert.equal(a.element('#total-amount').textContent,'23.00');assert.equal(a.stored().plan.lines[0].points,'11,50');
+ assert.equal(a.document.activeElement,points);assert.equal(points.selectionStart,5);assert.equal(points.value,'11,50');
+ a.click('#csv-export');a.click('#print-plan');assert.match(a.downloads.at(-1).content,/"2";"11,50";"";"23.00"/);
+ assert.match(a.element('#printout').textContent,/23.00/);
+ a.click('#json-export');assert.equal(JSON.parse(a.downloads.at(-1).content).plan.lines[0].points,'11,50');
+});
+
+test('invalid in-focus input immediately blocks stale totals and exports, then recovers in place',async()=>{
+ const a=await app(),before=a.controls(),quantity=a.field('quantity'),points=a.field('points'),saved=a.raw();
+ quantity.focus();quantity.value='';quantity.fire('input');sameControls(a,before);
+ assert.equal(a.element('#csv-export').disabled,true,'empty typed quantity must invalidate the former complete total');
+ assert.match(a.element('#total-label').textContent,/unvollständig/);assert.equal(a.raw(),saved);
+ const downloads=a.downloads.length;a.click('#json-export');assert.equal(a.downloads.length,downloads);
+ quantity.value='2';quantity.fire('input');assert.equal(a.element('#total-amount').textContent,'20.20');
+ const valid=a.raw();points.focus();points.value='11,';points.fire('input');sameControls(a,before);
+ assert.equal(a.element('#csv-export').disabled,true);assert.equal(a.raw(),valid);assert.equal(points.value,'11,');
+ points.value='11,5';points.fire('input');sameControls(a,before);
+ assert.equal(a.element('#csv-export').disabled,false);assert.equal(a.element('#total-amount').textContent,'23.00');
+ assert.equal(a.document.activeElement,points);assert.equal(a.stored().plan.lines[0].points,'11,5');
+});
+
+test('in-focus calculator input still preserves foreign storage and a recoverable current draft',async()=>{
+ const a=await app(),quantity=a.field('quantity'),foreign='synthetic foreign replacement';a.storage.set('dentotar.workspace.v1',foreign);
+ quantity.value='3';quantity.fire('input');assert.equal(a.raw(),foreign);assert.equal(a.element('#total-amount').textContent,'30.30');
+ assert.match(a.element('#save-status').textContent,/pausiert|Nicht gespeichert/);
+ a.click('#json-export');assert.equal(JSON.parse(a.downloads.at(-1).content).plan.lines[0].quantity,3);
+});

@@ -41,6 +41,8 @@ Browser-Speicher ist an die genaue Adresse gebunden. `localhost`, `127.0.0.1` un
 
 Bei mehreren kurz nacheinander ausgewählten JSON-Planimporten gilt nur die zuletzt ausgewählte Datei. Ein älterer, noch laufender Lesevorgang darf weder den Arbeitsstand ersetzen noch eine veraltete Fehlermeldung anzeigen. Wird die letzte Datei abgelehnt oder ihr Ersatz abgebrochen, bleibt der vorherige Arbeitsstand erhalten; ältere Importe werden nicht nachträglich aktiviert.
 
+Anzahl und private Taxpunkte werden bereits während der Eingabe neu berechnet, nicht erst beim Verlassen des Feldes. Ungültige Zwischeneingaben machen die Summe sofort unvollständig und werden nicht als gültiger Stand gespeichert/exportiert; die Eingabe bleibt zur Korrektur erhalten.
+
 ## Datenstand und Grenzen
 
 Grundlage sind der offizielle MTK/ZMT-Katalog Tarif 222, V2.00 vom 01.01.2025, und die separat ausgewiesenen Kurztexte der SSO V25.1, März 2025.[1][3] Der volle Originaltext bleibt für Auslegung und Regeln massgeblich.[3] Unterschiedliche Quellen werden nicht stillschweigend vermischt: fehlende Sozialversicherungs-Taxpunkte bleiben unbekannt, auch wenn die Kurztexttabelle einen Zahlenwert enthält.
