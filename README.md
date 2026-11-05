@@ -57,6 +57,8 @@ Unabhängige Nachschlage- und Rechenhilfe, kein offizielles Produkt der SSO oder
 
 Der vorhandene Katalog und die beiden zugehörigen Original-PDFs werden unverändert mit dem Repository und GitHub Pages bereitgestellt. Der Pages-Build kopiert ausschliesslich explizit erlaubte Dateien nach `dist-pages/`. Persönliche Pläne, Notizen, Exporte und der Arbeitsordner `sources/` bleiben ausserhalb der Veröffentlichung. Zum Nachvollziehen oder Aktualisieren der Daten kann `npm run data` verwendet werden; Änderungen am Datenstand sind vor einer Veröffentlichung gesondert zu prüfen.
 
+Auch der lokale Build prüft den vollständigen Katalog mit demselben Parser wie App und Pages-Build. Ein ungültiger Katalog wird vor dem Ersetzen von `dist/` abgewiesen; der letzte verwendbare Build und die Quelldatei bleiben dabei unverändert.
+
 ## Entwicklung und Prüfung
 
 ```sh
