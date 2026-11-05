@@ -2,6 +2,8 @@
 
 Eine abgelehnte lokale Ersatz-Katalogdatei lässt einen bereits aktiven Katalog samt Zusammenstellung sichtbar und nutzbar; nur beim ersten Laden bleibt die Dateiauswahl-Startseite geöffnet.
 
+Beim Öffnen eines anderen lokalen Katalogs bleibt ein noch verfügbarer Kapitelfilter erhalten. Fehlt das gewählte Kapitel, wird der Filter aufgehoben; die Ergebnisliste beginnt wieder mit der ersten Seite. Zusammenstellung und lokaler Speicher werden nicht verändert.
+
 Ein kompakter, lokaler Browser für Schweizer Zahnarzttarife: Positionen finden, Originalregeln nachlesen und eine persönliche Kostenzusammenstellung berechnen. Deutschsprachig, ohne Benutzerkonto, Backend-Datenbank, externe Schriftarten oder Laufzeitpakete.
 
 ## Online nutzen

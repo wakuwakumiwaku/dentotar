@@ -408,6 +408,8 @@ function activateCatalog(incoming, fromFile = false) {
   const nextSections = new Map(next.sections.map(item => [item.id, item]));
   catalog = next; index = nextIndex; lookup = nextLookup; catalogIsFile = fromFile;
   chapterLookup = nextChapters; sectionLookup = nextSections;
+  if (chapter && !next.positions.some(position => position.chapter === chapter)) chapter = '';
+  visible = 50;
   $('#catalog-version').textContent = `Katalogstand ${catalog.version}`;
   $('#catalog-total').textContent = `${catalog.positions.length} Positionen`;
   $('#catalog-start').hidden = true;
