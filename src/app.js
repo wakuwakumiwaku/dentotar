@@ -268,7 +268,10 @@ function bindEvents() {
       if (generation !== catalogRead) return;
       activateCatalog(incoming, true);
     } catch (error) {
-      if (generation === catalogRead) showCatalogStart(error.message);
+      if (generation === catalogRead) {
+        if (catalog) toast(`Katalog nicht übernommen: ${error.message}`);
+        else showCatalogStart(error.message);
+      }
     } finally {
       if (generation === catalogRead) { $('#catalog-open').disabled = false; event.target.value = ''; }
     }

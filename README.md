@@ -1,5 +1,7 @@
 # DENTOTAR Browser
 
+Eine abgelehnte lokale Ersatz-Katalogdatei lässt einen bereits aktiven Katalog samt Zusammenstellung sichtbar und nutzbar; nur beim ersten Laden bleibt die Dateiauswahl-Startseite geöffnet.
+
 Ein kompakter, lokaler Browser für Schweizer Zahnarzttarife: Positionen finden, Originalregeln nachlesen und eine persönliche Kostenzusammenstellung berechnen. Deutschsprachig, ohne Benutzerkonto, Backend-Datenbank, externe Schriftarten oder Laufzeitpakete.
 
 ## Online nutzen
