@@ -35,7 +35,7 @@ export function moneyCents(points, rate, quantity = 1) {
 }
 
 export function normalize(text) {
-  return String(text).toLowerCase().replaceAll('ä', 'ae').replaceAll('ö', 'oe').replaceAll('ü', 'ue')
+  return String(text).normalize('NFC').toLowerCase().replaceAll('ä', 'ae').replaceAll('ö', 'oe').replaceAll('ü', 'ue')
     .replaceAll('ß', 'ss').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
 }
 
