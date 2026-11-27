@@ -36,6 +36,18 @@ test('optimized search preserves full-catalog ordering with chapter and favorite
   t.diagnostic(`${catalog.positions.length} source rows, ${queries.length * contexts.length} full-order parity cases`);
 });
 
+test('composed and decomposed umlauts find the same tariff positions in the same order', async () => {
+  const { positions } = JSON.parse(await readFile(new URL('../public/data/catalog.json', import.meta.url), 'utf8'));
+  const index = buildSearchIndex(positions);
+  const hits = search(index, 'Röntgen').map(p => p.code);
+  assert.ok(hits.length > 0);
+  assert.deepEqual(search(index, 'Röntgen'.normalize('NFD')).map(p => p.code), hits);
+  assert.deepEqual(search(index, 'Roentgen').map(p => p.code), hits);
+
+  const decomposedTitle = { code: 'X', chapter: 'example', title: 'Zähne'.normalize('NFD') };
+  assert.deepEqual(search(buildSearchIndex([decomposedTitle]), 'Zähne'), [decomposedTitle]);
+});
+
 test('numeric collation ties, suffixes and changed favorite membership preserve source order', () => {
   const positions = ['4.02', '4.2', '4.001.M', '4.001.LP', '4.1', 'A.2'].map((code, i) => ({ code,
     title: i % 2 ? 'Röntgen Leistung' : 'Zähne Untersuchung', notes: 'Anästhesie 4.0000', chapter: i % 2 ? '01' : '02' }));
